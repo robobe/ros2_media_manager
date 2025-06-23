@@ -24,16 +24,16 @@
    </property>
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
-     <widget class="QPushButton" name="pushButton">
+     <widget class="QPushButton" name="cmdRemoveAll">
       <property name="text">
-       <string>PushButton</string>
+       <string>RemoveAll</string>
       </property>
      </widget>
     </item>
     <item>
-     <widget class="QPushButton" name="pushButton_2">
+     <widget class="QPushButton" name="cmdDownload">
       <property name="text">
-       <string>PushButton</string>
+       <string>Download</string>
       </property>
      </widget>
     </item>

@@ -31,4 +31,5 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-humble-rqt-image-view \
+    rsync \
   && rm -rf /var/lib/apt/lists/*

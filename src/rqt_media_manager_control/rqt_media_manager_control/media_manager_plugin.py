@@ -5,13 +5,20 @@ from .media_manager_ui_loader import MediaManagerWidget
 from .media_manager_backend import BackendNode
 from PyQt5.QtCore import QStringListModel, Qt
 # from python_qt_binding.QtWidgets import QApplication, QWidget, QVBoxLayout, QListView, QPushButton
-from PyQt5.QtWidgets import QPushButton, QListView, QAbstractItemView, QMessageBox, QLineEdit
+from PyQt5.QtWidgets import QPushButton, QListView, QAbstractItemView, QMessageBox, QLineEdit, QFileDialog
 
 class MediaManagerRqtPlugin(Plugin):
     def __init__(self, context):
         super().__init__(context)
         self._widget = MediaManagerWidget()
         self._backend = BackendNode()
+
+        self.cmd_remove_all:QPushButton  = self._widget.cmdRemoveAll
+        self.cmd_remove_all.clicked.connect(self.on_remove_all_clicked)
+
+        self.cmd_download:QPushButton  = self._widget.cmdDownload
+        self.cmd_download.setEnabled(False)
+        self.cmd_download.clicked.connect(self.on_download_clicked)
 
         self.cmd_set_media:QPushButton  = self._widget.cmdSetMedia
         self.cmd_set_media.setEnabled(False)
@@ -56,6 +63,19 @@ class MediaManagerRqtPlugin(Plugin):
     def init_backend(self):
         self._backend.run()
 
+    def on_remove_all_clicked(self):
+        reply = QMessageBox.question(
+            self._widget,
+            "Confirm Action",
+            "Remove all media files from remote?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No
+        )
+        if reply == QMessageBox.No:
+            return
+        
+        self._backend.remove_all_remote_files()
+
     def on_set_media_clicked(self):
         self._backend.set_media(str(self.txt_media_name.text()))
 
@@ -64,6 +84,13 @@ class MediaManagerRqtPlugin(Plugin):
 
     def on_refresh_clicked(self):
         self._backend.load_media()
+
+    def on_download_clicked(self):
+        indexes = self.lvMedia.selectedIndexes()
+        file_name = self.m_media.data(indexes[0], Qt.DisplayRole)
+        folder = QFileDialog.getExistingDirectory(self._widget, "Select Folder")
+        if folder:
+            self._backend.download_file(file_name, folder)
 
     def on_cmd_remove_clicked(self):
         reply = QMessageBox.question(
@@ -84,9 +111,11 @@ class MediaManagerRqtPlugin(Plugin):
         indexes = self.lvMedia.selectedIndexes()
         if indexes:
             self.cmd_remove.setEnabled(True)
+            self.cmd_download.setEnabled(True)
             
         else:
             self.cmd_remove.setEnabled(False)
+            self.cmd_download.setEnabled(False)
 
     def on_media_name_text_changed(self, text):
         if len(text) == 0:

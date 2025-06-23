@@ -16,7 +16,7 @@ from enum import IntEnum
 TOPIC_IMG = "/camera/image_raw"
 SRV_START_STOP = "start_stop"
 SRV_REMOVE_MEDIA = "remove_media"
-SRV_REMOVE_ALL = "remove_all"
+SRV_REMOVE_ALL = "remove_all_media"
 SRV_GET_MEDIA_LIST = "get_media_list"
 SRV_SET_MEDIA_NAME = "set_media_name"
 
@@ -25,6 +25,8 @@ PARAM_MEDIA_FPS = "media_fps"
 PARAM_MEDIA_WIDTH = "media_width"
 PARAM_MEDIA_HEIGHT = "media_height"
 
+NODE_NAME = "media_manager"
+
 class State(IntEnum):
     STOP = 0
     ASK_TO_STOP  = 1
@@ -32,8 +34,7 @@ class State(IntEnum):
 
 class MediaManager(Node):
     def __init__(self):
-        node_name="media_manger"
-        super().__init__(node_name)
+        super().__init__(NODE_NAME)
         self.bridge = CvBridge()
         self._init_parameters()
         self._init_service()
@@ -78,6 +79,11 @@ class MediaManager(Node):
         remove all
         get media list
         """
+        self.remove_all = self.create_service(
+            Trigger,
+            SRV_REMOVE_ALL,
+            self.remove_all_callback
+        )
         self.set_media_name = self.create_service(
             SetMediaFile,
             SRV_SET_MEDIA_NAME,
@@ -110,7 +116,7 @@ class MediaManager(Node):
         filename = request.name
         if not filename.lower().endswith('.mp4'):
             filename += '.mp4'
-            
+
         self._current_file_path = media_path / filename
 
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
@@ -136,7 +142,24 @@ class MediaManager(Node):
         response.message = msg
         return response
 
-
+    def remove_all_callback(self, request: Trigger.Request, response: Trigger.Response):
+        media_path = Path(self.get_parameter(PARAM_MEDIA_LOCATION).get_parameter_value().string_value)
+        removed_files = []
+        failed_files = []
+        for mp4_file in media_path.glob("*.mp4"):
+            try:
+                mp4_file.unlink()
+                removed_files.append(mp4_file.name)
+            except Exception as e:
+                failed_files.append(f"{mp4_file.name}: {str(e)}")
+        if failed_files:
+            response.success = False
+            response.message = f"Failed to remove: {', '.join(failed_files)}"
+        else:
+            response.success = True
+            response.message = f"Removed files: {', '.join(removed_files)}" if removed_files else "No mp4 files found"
+        return response
+    
     def remove_media_callback(self, request: SetMediaFile.Request, response: SetMediaFile.Response):
         media_path = Path(self.get_parameter(PARAM_MEDIA_LOCATION).get_parameter_value().string_value)
         file_to_remove = media_path / request.name
