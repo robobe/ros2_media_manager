@@ -1,0 +1,16 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "colcon",
+        "detail": "Build all ros2 packages using colcon",
+        "type": "shell",
+        "command": "colcon build",
+        "problemMatcher": [],
+        "group": {
+            "kind": "build",
+            "isDefault": true
+        }
+      }
+    ]
+}

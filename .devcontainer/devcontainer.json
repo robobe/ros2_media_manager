@@ -1,0 +1,26 @@
+{
+    "name": "media_manager",
+    "dockerComposeFile": "../docker-compose.yaml",
+    "service": "ros",
+    "shutdownAction": "stopCompose",
+    "workspaceFolder": "/workspace",
+    "remoteUser": "user",
+    "customizations": {
+      "vscode": {
+        "extensions": [
+            "ms-python.python",
+            "ms-vscode.cpptools",
+            "twxs.cmake",
+            "redhat.vscode-xml",
+            "redhat.vscode-yaml",
+            "albert.tabout",
+            "actboy168.tasks",
+            "streetsidesoftware.code-spell-checker",
+            "mhutchie.git-graph",
+            "dlech.chmod",
+            "smilerobotics.urdf"
+        ],
+        "settings": {}
+      }
+    }
+  }

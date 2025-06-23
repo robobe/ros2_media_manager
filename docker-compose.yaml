@@ -1,0 +1,21 @@
+services:
+  ros:
+    build:
+      context: .
+      dockerfile: .devcontainer/Dockerfile
+    user: "user:user"
+    volumes:
+      - .:/workspace:cached
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw 
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities: [gpu]
+    hostname: ros
+    network_mode: host
+    stdin_open: true
+    tty: true
+    environment:
+      - DISPLAY=${DISPLAY}
+      - QT_X11_NO_MITSHM=1
