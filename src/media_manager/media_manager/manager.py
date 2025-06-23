@@ -84,6 +84,7 @@ class MediaManager(Node):
             SRV_REMOVE_ALL,
             self.remove_all_callback
         )
+
         self.set_media_name = self.create_service(
             SetMediaFile,
             SRV_SET_MEDIA_NAME,
@@ -143,13 +144,16 @@ class MediaManager(Node):
         return response
 
     def remove_all_callback(self, request: Trigger.Request, response: Trigger.Response):
+        self.get_logger().info("remove all start")
         media_path = Path(self.get_parameter(PARAM_MEDIA_LOCATION).get_parameter_value().string_value)
         removed_files = []
         failed_files = []
+        self.get_logger().info(f"remove all: {media_path.as_posix()}")
         for mp4_file in media_path.glob("*.mp4"):
             try:
                 mp4_file.unlink()
                 removed_files.append(mp4_file.name)
+                self.get_logger().info(f"remove all: remove {mp4_file.name}")
             except Exception as e:
                 failed_files.append(f"{mp4_file.name}: {str(e)}")
         if failed_files:

@@ -54,7 +54,7 @@ class MediaManagerRqtPlugin(Plugin):
         self._backend.on_set_media += self.set_media_handler
         self._backend.on_start_record += self.on_start_record_handler
         self._backend.on_stop_record += self.on_stop_record_handler
-        
+        self._backend.on_download_done += self.on_download_done_handler
         context.add_widget(self._widget)
 
         self.init_backend()
@@ -130,8 +130,12 @@ class MediaManagerRqtPlugin(Plugin):
         self.m_media.setStringList(data)
 
     def __error_handler(self, msg: str) -> None:
-        QMessageBox.critical(self, "Error", msg)
+        QMessageBox.critical(self._widget, "Error", msg)
 
+    def on_download_done_handler(self, msg: str):
+        QMessageBox.information(self._widget, f"Download {msg} file complete")
+
+        
     def set_media_handler(self):
         """
         set media success
