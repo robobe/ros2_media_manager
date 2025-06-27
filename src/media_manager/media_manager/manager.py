@@ -119,7 +119,10 @@ class MediaManager(Node):
             filename += '.mp4'
 
         self._current_file_path = media_path / filename
-
+        if self._current_file_path.exists():
+            response.success = False
+            response.message = f"Media {filename} exists"
+            return response
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
         self._video_write = cv2.VideoWriter(str(self._current_file_path.as_posix()), fourcc, fps, (width, height))
 

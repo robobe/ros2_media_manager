@@ -110,6 +110,9 @@ class BackendNode(Node):
             response: SetMediaFile.Response = future.result()
             if response.success:
                 self.on_set_media.fire()
+            else:
+                self.get_logger().error("Media exists")
+                self.on_error.fire(response.message)
         else:
             self.get_logger().error(f"Failed to remove media: {file_name}")
 
