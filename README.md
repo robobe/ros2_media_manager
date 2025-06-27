@@ -35,7 +35,6 @@ ros2 run media_manager manager.py
 
 ![alt text](images/rqt_media_manager.png)
 
-
 ### usage
 
 #### create new media
@@ -54,3 +53,4 @@ Enter media name and click `Set` the set operation prepared the media file but *
 
 ### Todo:
 - Add pause operation
+- subscribe to image_info message

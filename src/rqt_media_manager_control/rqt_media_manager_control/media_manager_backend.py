@@ -13,6 +13,7 @@ SRV_GET_MEDIA_LIST = "get_media_list"
 SRV_SET_MEDIA_NAME = "set_media_name"
 NODE_NAME = "media_manager"
 
+SERVICE_CALL_TIMEOUT = 4
 
 class Event:
     def __init__(self):
@@ -43,17 +44,30 @@ class BackendNode(Node):
         self.on_start_record = Event()
         self.on_stop_record = Event()
         self.on_download_done = Event()
+        self.on_connected = Event()
 
+
+    def wait_for_service_handler(self, service):
+        WAIT_TIME = 1
+        MAX_RETRIES = 3
+        counter = 0
+        while not service.wait_for_service(WAIT_TIME):
+            self.get_logger().warning("wait for service")
+            counter += 1
+            if counter > MAX_RETRIES:
+                msg = "Service not available, run media manage node"
+                self.on_error.fire(msg)
+                self.get_logger().error(msg)
+                raise Exception(msg)
 
     def run(self):
-        while not self.__load_media_client.wait_for_service(1):
-            self.get_logger().warning("wait for service")
+        self.wait_for_service_handler(self.__load_media_client)
+        self.wait_for_service_handler(self.__remove_all_client)
 
-        while not self.__remove_all_client.wait_for_service(1):
-            self.get_logger().warning("wait for remove all service")
 
         self.load_media()
         self.get_media_location_param()
+        self.on_connected.fire()
 
 
     def get_media_location_param(self):
@@ -79,7 +93,11 @@ class BackendNode(Node):
     def load_media(self):
         self.req = GetMediaFileList.Request()
         future = self.__load_media_client.call_async(self.req)
-        rclpy.spin_until_future_complete(self, future)
+        rclpy.spin_until_future_complete(self, future, timeout_sec=SERVICE_CALL_TIMEOUT)
+        if not future.done():
+            self.get_logger().error("Timeout while loading media files")
+            self.on_error.fire("Timeout while loading media files")
+            return
         if future.result() is not None:
             response: GetMediaFileList.Response
             response = future.result()
@@ -93,7 +111,12 @@ class BackendNode(Node):
         req: SetMediaFile.Request = SetMediaFile.Request()
         req.name = file_name
         future = self.__remove_media_client.call_async(req)
-        rclpy.spin_until_future_complete(self, future)
+        rclpy.spin_until_future_complete(self, future, timeout_sec=SERVICE_CALL_TIMEOUT)
+        if not future.done():
+            msg = "Timeout while remove media files"
+            self.get_logger().error(msg)
+            self.on_error.fire(msg)
+            return
         if future.result() is not None:
             response: SetMediaFile.Response = future.result()
             if response.success:
@@ -135,7 +158,12 @@ class BackendNode(Node):
         response: Trigger.Response
         req: Trigger.Request = Trigger.Request()
         future = self.__remove_all_client.call_async(req)
-        rclpy.spin_until_future_complete(self, future)
+        rclpy.spin_until_future_complete(self, future, timeout_sec=SERVICE_CALL_TIMEOUT)
+        if not future.done():
+            msg = "Timeout while remove all media files"
+            self.get_logger().error(msg)
+            self.on_error.fire(msg)
+            return
         if future.result() is not None:
             response = future.result()
             if response.success:

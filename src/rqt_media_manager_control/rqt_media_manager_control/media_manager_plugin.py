@@ -15,7 +15,8 @@ class MediaManagerRqtPlugin(Plugin):
 
         self.cmd_remove_all:QPushButton  = self._widget.cmdRemoveAll
         self.cmd_remove_all.clicked.connect(self.on_remove_all_clicked)
-
+        self.cmd_remove_all.setEnabled(False)
+        
         self.cmd_download:QPushButton  = self._widget.cmdDownload
         self.cmd_download.setEnabled(False)
         self.cmd_download.clicked.connect(self.on_download_clicked)
@@ -34,6 +35,7 @@ class MediaManagerRqtPlugin(Plugin):
 
         self.cmd_refresh: QPushButton = self._widget.cmdRefresh
         self.cmd_refresh.clicked.connect(self.on_refresh_clicked)
+        self.cmd_refresh.setEnabled(False)
 
         self.cmd_remove:QPushButton  = self._widget.cmdRemove
         self.cmd_remove.setEnabled(False)
@@ -55,13 +57,21 @@ class MediaManagerRqtPlugin(Plugin):
         self._backend.on_start_record += self.on_start_record_handler
         self._backend.on_stop_record += self.on_stop_record_handler
         self._backend.on_download_done += self.on_download_done_handler
+        self._backend.on_connected += self.on_connected
         context.add_widget(self._widget)
 
         self.init_backend()
 
 
     def init_backend(self):
-        self._backend.run()
+        try:
+            self._backend.run()
+        except:
+            pass
+
+    def on_connected(self):
+        self.cmd_remove_all.setEnabled(True)
+        self.cmd_refresh.setEnabled(True)
 
     def on_remove_all_clicked(self):
         reply = QMessageBox.question(
