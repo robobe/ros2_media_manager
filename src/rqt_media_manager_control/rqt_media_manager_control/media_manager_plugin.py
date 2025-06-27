@@ -164,7 +164,7 @@ class MediaManagerRqtPlugin(Plugin):
         """
         self.cmd_set_media.setEnabled(True)
         self.txt_media_name.setEnabled(True)
-        self.txt_media_name.text = ""
+        self.txt_media_name.setText("")
         self.cmd_start_record.setEnabled(False)
         self.cmd_stop_record.setEnabled(False)
         self._backend.load_media()

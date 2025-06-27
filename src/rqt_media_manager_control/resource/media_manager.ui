@@ -6,96 +6,125 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>731</width>
-    <height>426</height>
+    <width>608</width>
+    <height>471</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Demo plugin</string>
+   <string>Media Manager Control</string>
   </property>
-  <widget class="QWidget" name="verticalLayoutWidget">
-   <property name="geometry">
-    <rect>
-     <x>430</x>
-     <y>40</y>
-     <width>160</width>
-     <height>251</height>
-    </rect>
-   </property>
-   <layout class="QVBoxLayout" name="verticalLayout">
-    <item>
-     <widget class="QPushButton" name="cmdRemoveAll">
-      <property name="text">
-       <string>RemoveAll</string>
-      </property>
-     </widget>
-    </item>
-    <item>
-     <widget class="QPushButton" name="cmdDownload">
-      <property name="text">
-       <string>Download</string>
-      </property>
-     </widget>
-    </item>
-    <item>
-     <widget class="QPushButton" name="cmdRemove">
-      <property name="text">
-       <string>Remove</string>
-      </property>
-     </widget>
-    </item>
-    <item>
-     <widget class="QPushButton" name="cmdRefresh">
-      <property name="text">
-       <string>Refrash</string>
-      </property>
-     </widget>
-    </item>
-   </layout>
-  </widget>
-  <widget class="QListView" name="lvMedia">
+  <widget class="QWidget" name="verticalLayoutWidget_2">
    <property name="geometry">
     <rect>
      <x>30</x>
-     <y>30</y>
-     <width>371</width>
-     <height>291</height>
+     <y>320</y>
+     <width>531</width>
+     <height>83</height>
     </rect>
    </property>
+   <layout class="QVBoxLayout" name="layoutNewMedia">
+    <item alignment="Qt::AlignLeft|Qt::AlignTop">
+     <widget class="QLabel" name="laNewMedia">
+      <property name="text">
+       <string>New Media</string>
+      </property>
+      <property name="textFormat">
+       <enum>Qt::RichText</enum>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLineEdit" name="mediaName"/>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout">
+      <property name="sizeConstraint">
+       <enum>QLayout::SetDefaultConstraint</enum>
+      </property>
+      <item>
+       <widget class="QPushButton" name="cmdSetMedia">
+        <property name="text">
+         <string>Set</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="cmdStartRecord">
+        <property name="text">
+         <string>Start</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="cmdStopRecord">
+        <property name="text">
+         <string>Stop</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+   </layout>
   </widget>
   <widget class="QWidget" name="horizontalLayoutWidget">
    <property name="geometry">
     <rect>
      <x>30</x>
-     <y>359</y>
-     <width>661</width>
-     <height>41</height>
+     <y>40</y>
+     <width>531</width>
+     <height>241</height>
     </rect>
    </property>
-   <layout class="QHBoxLayout" name="horizontalLayout">
+   <layout class="QHBoxLayout" name="lauoutMediaControl">
     <item>
-     <widget class="QLineEdit" name="mediaName"/>
+     <layout class="QVBoxLayout" name="layoutMediaList">
+      <item alignment="Qt::AlignLeft|Qt::AlignTop">
+       <widget class="QLabel" name="laMediaList">
+        <property name="text">
+         <string>MediaList</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QListView" name="lvMedia"/>
+      </item>
+     </layout>
     </item>
     <item>
-     <widget class="QPushButton" name="cmdSetMedia">
-      <property name="text">
-       <string>Set</string>
-      </property>
-     </widget>
-    </item>
-    <item>
-     <widget class="QPushButton" name="cmdStartRecord">
-      <property name="text">
-       <string>Start</string>
-      </property>
-     </widget>
-    </item>
-    <item>
-     <widget class="QPushButton" name="cmdStopRecord">
-      <property name="text">
-       <string>Stop</string>
-      </property>
-     </widget>
+     <layout class="QGridLayout" name="layoutControls">
+      <item row="0" column="0">
+       <layout class="QVBoxLayout" name="verticalLayout">
+        <item>
+         <widget class="QPushButton" name="cmdRemoveAll">
+          <property name="text">
+           <string>RemoveAll</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="cmdDownload">
+          <property name="text">
+           <string>Download</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="cmdRemove">
+          <property name="text">
+           <string>Remove</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="cmdRefresh">
+          <property name="text">
+           <string>Refresh</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+     </layout>
     </item>
    </layout>
   </widget>
