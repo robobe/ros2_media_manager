@@ -84,7 +84,7 @@ class MediaManagerRqtPlugin(Plugin):
         self._backend.on_connected += self.on_connected
         self._backend.on_profile_fetch += self.__profile_loaded_handler
         context.add_widget(self._widget)
-
+        self._backend.set_source("bag")
 
 
     def on_radio_toggled(self, mode):

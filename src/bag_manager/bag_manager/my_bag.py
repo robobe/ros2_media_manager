@@ -18,6 +18,9 @@ from std_srvs.srv import Trigger
 from media_manager_interfaces.srv import GetMediaFileList, SetMediaFile
 from pathlib import Path
 import shutil
+import yaml
+from ament_index_python.packages import get_package_share_directory
+
 
 INTERVAL_CHECK = 1.0
 
@@ -29,7 +32,7 @@ SRV_GET_PROFILE_LIST = "get_profile_list"
 SRV_SET_MEDIA_NAME = "set_media_name"
 
 PARAM_MEDIA_LOCATION = "media_location"
-PARAM_PROFILES = "profiles.default"
+PARAM_PROFILE_LOCATION = "profile_location"
 
 class _SubscriberHelper(object):
     """
@@ -57,6 +60,18 @@ class _SubscriberHelper(object):
 
 NODE_NAME = "my_bag_record"
 
+from dataclasses import dataclass, field
+from typing import List
+
+@dataclass
+class Profile():
+    topics: List[str] = field(default_factory=list)
+    id: str= ""
+
+@dataclass
+class Profiles():
+    profiles: List[Profile] = field(default_factory=list)
+
 class Recorder(Node):
     def __init__(self):
         super().__init__(NODE_NAME)
@@ -70,15 +85,35 @@ class Recorder(Node):
         self._limited_topics = set()
         self._failed_topics = set()
         self._last_update = time.time()
+        self._profiles = None
         self._init_parameters()
         self._init_service()
-
-        self.topics = ["/camera/image_raw/compressed", "/xxx"]
+        self._load_profile()
+        self.topics = []
+        
         
         
         self.get_logger().info("start bag manager")
-        self.get_logger().warning(f"{self.get_parameter(PARAM_PROFILES).get_parameter_value().string_array_value}")
-        self.get_logger().warning(f"{self.get_parameter('data').get_parameter_value().string_value}")
+
+
+    def _load_profile(self):
+        profile_path = Path(self.get_parameter(PARAM_PROFILE_LOCATION).get_parameter_value().string_value)
+        if not profile_path.exists():
+            profile_path = Path(get_package_share_directory("bag_manager")).joinpath("config").joinpath("profiles.yaml")
+            if not profile_path.exists():
+                self.get_logger().error(f"No profile file: {profile_path}")
+                return
+
+        self.get_logger().info(f"Load profile file from: {profile_path}")
+        data = yaml.safe_load(open(profile_path))
+        profile_list = [
+            Profile(id=key, topics=topics)
+            for key, topics in data["profiles"].items()
+        ]
+
+        self._profiles = Profiles(profiles=profile_list)
+        
+
 
     def _get_full_topic_name(self, topic):
         topic_name = f'/{self.get_name()}/{topic}'
@@ -86,8 +121,7 @@ class Recorder(Node):
 
     def _init_parameters(self):
         self.declare_parameter(PARAM_MEDIA_LOCATION, "/tmp/data")
-        self.declare_parameter(PARAM_PROFILES)
-        self.declare_parameter("data", "")
+        self.declare_parameter(PARAM_PROFILE_LOCATION, "/tmp/profile.yaml")
 
         
 
@@ -157,12 +191,13 @@ class Recorder(Node):
         # Implement your start record logic here
         msg = "error start / stop video record"
         if self._stop_flag:
+            self._stop_flag = False
             self._run_master_check()
             self._topics_validation()
             self._write_thread = threading.Thread(target=self._run_write, daemon=True, name="storage_worker")
             self._write_thread.start()
             msg = "START"
-            self._stop_flag = False
+            
         else:
             # stop record
             self._stop_flag = True
@@ -188,16 +223,7 @@ class Recorder(Node):
         
         
         try:
-            self._serialization_format = 'cdr'
-            self._storage_id = 'sqlite3'
-            self._storage_options = rosbag2_py.StorageOptions(
-                uri=self._current_file_path.as_posix(), storage_id=self._storage_id)
-            self._converter_options = rosbag2_py.ConverterOptions(
-                input_serialization_format=self._serialization_format,
-                output_serialization_format=self._serialization_format)
-            self.rosbag_writer = rosbag2_py.SequentialWriter()
-            self.rosbag_writer.open(self._storage_options, self._converter_options)
-            self._bag = self._create_initial_rosbag(self._current_file_path.as_posix(), self.topics)
+            self.create_bag_file()
             
             response.message = ""
             response.success = True
@@ -208,6 +234,19 @@ class Recorder(Node):
             response.success = False
         
         return response
+
+    def create_bag_file(self, profile="default"):
+        self.topics = [item.topics for item in self._profiles.profiles if item.id == profile][0]
+        self._serialization_format = 'cdr'
+        self._storage_id = 'sqlite3'
+        self._storage_options = rosbag2_py.StorageOptions(
+                uri=self._current_file_path.as_posix(), storage_id=self._storage_id)
+        self._converter_options = rosbag2_py.ConverterOptions(
+                input_serialization_format=self._serialization_format,
+                output_serialization_format=self._serialization_format)
+        self.rosbag_writer = rosbag2_py.SequentialWriter()
+        self.rosbag_writer.open(self._storage_options, self._converter_options)
+        self._bag = self._create_initial_rosbag(self._current_file_path.as_posix(), self.topics)
 
     def remove_all_callback(self, request, response):
         self.get_logger().info("remove all start")
@@ -232,7 +271,11 @@ class Recorder(Node):
 
     
     def get_all_profiles_callback(self, request:GetMediaFileList.Request, response: GetMediaFileList.Response):
-        response.file_list = ["profile 1", "profile_2", "profile_3"]
+        items = []
+        if self._profiles:
+            items = [item.id for item in self._profiles.profiles]
+        
+        response.file_list = items
         return response
 
     def get_all_media_callback(self, request:GetMediaFileList.Request, response: GetMediaFileList.Response):

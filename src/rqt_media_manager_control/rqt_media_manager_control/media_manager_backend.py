@@ -111,15 +111,17 @@ class BackendNode(Node):
     
     
     def run(self):
-        self.wait_for_service_handler(self.__load_media_client)
-        self.wait_for_service_handler(self.__remove_all_client)
+        try:
+            self.wait_for_service_handler(self.__load_media_client)
+            self.wait_for_service_handler(self.__remove_all_client)
 
 
-        self.load_media()
-        self.load_profiles()
-        self.get_media_location_param()
-        self.on_connected.fire()
-
+            self.load_media()
+            self.load_profiles()
+            self.get_media_location_param()
+            self.on_connected.fire()
+        except:
+            self.on_error.fire("Failed to load remote service")
 
     def get_media_location_param(self):
         request = GetParameters.Request()
