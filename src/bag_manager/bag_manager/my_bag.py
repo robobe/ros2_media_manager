@@ -17,7 +17,7 @@ from rosidl_runtime_py.utilities import get_message
 from std_srvs.srv import Trigger
 from media_manager_interfaces.srv import GetMediaFileList, SetMediaFile
 from pathlib import Path
-
+import shutil
 
 INTERVAL_CHECK = 1.0
 
@@ -175,7 +175,25 @@ class Recorder(Node):
         return response
 
     def remove_all_callback(self, request, response):
-        pass
+        self.get_logger().info("remove all start")
+        media_path = Path(self.get_parameter(PARAM_MEDIA_LOCATION).get_parameter_value().string_value)
+        removed_files = []
+        failed_files = []
+        self.get_logger().info(f"remove all: {media_path.as_posix()}")
+        for item in media_path.iterdir():
+            try:
+                shutil.rmtree(item)
+                removed_files.append(item.name)
+            except Exception as e:
+                failed_files.append(f"{item.name}: {str(e)}")
+
+        if failed_files:
+            response.success = False
+            response.message = f"Failed to remove: {', '.join(failed_files)}"
+        else:
+            response.success = True
+            response.message = f"Removed files: {', '.join(removed_files)}" if removed_files else "No bag files found"
+        return response
 
     def get_all_media_callback(self, request:GetMediaFileList.Request, response: GetMediaFileList.Response):
         media_path = Path(self.get_parameter(PARAM_MEDIA_LOCATION).get_parameter_value().string_value)

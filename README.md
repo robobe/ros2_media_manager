@@ -54,3 +54,4 @@ Enter media name and click `Set` the set operation prepared the media file but *
 ### Todo:
 - Add pause operation
 - subscribe to image_info message
+- disabled remove all and remove in mode start
