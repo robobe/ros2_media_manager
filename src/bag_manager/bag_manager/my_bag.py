@@ -25,6 +25,7 @@ SRV_START_STOP = "start_stop"
 SRV_REMOVE_MEDIA = "remove_media"
 SRV_REMOVE_ALL = "remove_all_media"
 SRV_GET_MEDIA_LIST = "get_media_list"
+SRV_GET_PROFILE_LIST = "get_profile_list"
 SRV_SET_MEDIA_NAME = "set_media_name"
 
 PARAM_MEDIA_LOCATION = "media_location"
@@ -114,6 +115,12 @@ class Recorder(Node):
             GetMediaFileList,
             self._get_full_topic_name(SRV_GET_MEDIA_LIST),
             self.get_all_media_callback
+        )
+
+        self.get_all_media_service = self.create_service(
+            GetMediaFileList,
+            self._get_full_topic_name(SRV_GET_PROFILE_LIST),
+            self.get_all_profiles_callback
         )
 
         self.start_record_service = self.create_service(
@@ -221,6 +228,11 @@ class Recorder(Node):
         else:
             response.success = True
             response.message = f"Removed files: {', '.join(removed_files)}" if removed_files else "No bag files found"
+        return response
+
+    
+    def get_all_profiles_callback(self, request:GetMediaFileList.Request, response: GetMediaFileList.Response):
+        response.file_list = ["profile 1", "profile_2", "profile_3"]
         return response
 
     def get_all_media_callback(self, request:GetMediaFileList.Request, response: GetMediaFileList.Response):

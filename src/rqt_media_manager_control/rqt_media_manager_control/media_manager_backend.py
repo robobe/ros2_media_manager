@@ -11,6 +11,8 @@ SRV_REMOVE_MEDIA = "remove_media"
 SRV_REMOVE_ALL = "remove_all_media"
 SRV_GET_MEDIA_LIST = "get_media_list"
 SRV_SET_MEDIA_NAME = "set_media_name"
+SRV_GET_PROFILE_LIST = "get_profile_list"
+
 NODE_NAME = "media_manager"
 
 SERVICE_CALL_TIMEOUT = 4
@@ -38,7 +40,9 @@ class BackendNode(Node):
         self.__start_stop_client = None # 
         self.__remove_all_client = None
         self.__get_media_location_client = None
+        self.__load_profile_client = None
 
+        self.on_profile_fetch = Event()
         self.on_media_list_fetch = Event()
         self.on_error = Event()
         self.on_set_media = Event()
@@ -52,6 +56,10 @@ class BackendNode(Node):
         return topic_name
 
     def _init_service(self):
+        if self.__load_profile_client is not None:
+            self.__load_media_client.destroy()
+        self.__load_profile_client = self.create_client(GetMediaFileList, self._get_full_topic_name(SRV_GET_PROFILE_LIST))
+
         if self.__load_media_client is not None:
             self.__load_media_client.destroy()
         self.__load_media_client = self.create_client(GetMediaFileList, self._get_full_topic_name(SRV_GET_MEDIA_LIST))
@@ -108,7 +116,8 @@ class BackendNode(Node):
 
 
         self.load_media()
-        # self.get_media_location_param()
+        self.load_profiles()
+        self.get_media_location_param()
         self.on_connected.fire()
 
 
@@ -131,6 +140,22 @@ class BackendNode(Node):
         else:
             self.get_logger().error("Service call failed")
 
+    def load_profiles(self):
+        self.req = GetMediaFileList.Request()
+        future = self.__load_profile_client.call_async(self.req)
+        rclpy.spin_until_future_complete(self, future, timeout_sec=SERVICE_CALL_TIMEOUT)
+        if not future.done():
+            self.get_logger().error("Timeout while loading media files")
+            self.on_error.fire("Timeout while loading media files")
+            return
+        if future.result() is not None:
+            response: GetMediaFileList.Response
+            response = future.result()
+            self.on_profile_fetch.fire(response.file_list)
+            self.get_logger().info(f"Media files: {future.result().file_list}")
+        else:
+            self.get_logger().error("load media service failed")
+            self.on_error.fire("load media service failed")
 
     def load_media(self):
         self.req = GetMediaFileList.Request()

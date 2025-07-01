@@ -17,7 +17,7 @@
    <property name="geometry">
     <rect>
      <x>30</x>
-     <y>350</y>
+     <y>380</y>
      <width>531</width>
      <height>83</height>
     </rect>
@@ -151,6 +151,28 @@
        <string>MP4</string>
       </property>
      </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QWidget" name="horizontalLayoutWidget_3">
+   <property name="geometry">
+    <rect>
+     <x>30</x>
+     <y>320</y>
+     <width>531</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <layout class="QHBoxLayout" name="horizontalLayout_3">
+    <item>
+     <widget class="QLabel" name="label">
+      <property name="text">
+       <string>Profile/Topic</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QComboBox" name="combo_profiles"/>
     </item>
    </layout>
   </widget>

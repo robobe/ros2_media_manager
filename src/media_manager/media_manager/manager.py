@@ -19,6 +19,7 @@ SRV_REMOVE_MEDIA = "remove_media"
 SRV_REMOVE_ALL = "remove_all_media"
 SRV_GET_MEDIA_LIST = "get_media_list"
 SRV_SET_MEDIA_NAME = "set_media_name"
+SRV_GET_PROFILE_LIST = "get_profile_list"
 
 PARAM_MEDIA_LOCATION = "media_location"
 PARAM_MEDIA_FPS = "media_fps"
@@ -84,6 +85,12 @@ class MediaManager(Node):
         remove all
         get media list
         """
+        self.get_all_media_service = self.create_service(
+            GetMediaFileList,
+            self._get_full_topic_name(SRV_GET_PROFILE_LIST),
+            self.get_all_profiles_callback
+        )
+
         self.remove_all = self.create_service(
             Trigger,
             self._get_full_topic_name(SRV_REMOVE_ALL),
@@ -192,6 +199,10 @@ class MediaManager(Node):
         media_path = Path(self.get_parameter(PARAM_MEDIA_LOCATION).get_parameter_value().string_value)
         mp4_files = [f.name for f in media_path.glob("*.mp4") if f.is_file()]
         response.file_list = mp4_files
+        return response
+    
+    def get_all_profiles_callback(self, request: GetMediaFileList.Request, response: GetMediaFileList.Response):
+        response.file_list = []
         return response
     #endregion services callback
 

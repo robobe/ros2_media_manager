@@ -12,7 +12,8 @@ from PyQt5.QtWidgets import (
     QMessageBox, 
     QLineEdit, 
     QFileDialog,
-    QRadioButton
+    QRadioButton,
+    QComboBox
     )
 from functools import partial
 
@@ -22,6 +23,11 @@ class MediaManagerRqtPlugin(Plugin):
         super().__init__(context)
         self._widget = MediaManagerWidget()
         self._backend = BackendNode()
+
+        self.combo_profiles: QComboBox = self._widget.combo_profiles
+        self.m_profiles = QStringListModel()
+        self.m_profiles.setStringList([])
+        self.combo_profiles.setModel(self.m_profiles)
 
         self.radio_mp4: QRadioButton = self._widget.ra_mp4
         self.radio_mp4.toggled.connect(partial(self.on_radio_toggled, "mp4"))
@@ -76,6 +82,7 @@ class MediaManagerRqtPlugin(Plugin):
         self._backend.on_stop_record += self.on_stop_record_handler
         self._backend.on_download_done += self.on_download_done_handler
         self._backend.on_connected += self.on_connected
+        self._backend.on_profile_fetch += self.__profile_loaded_handler
         context.add_widget(self._widget)
 
 
@@ -152,6 +159,9 @@ class MediaManagerRqtPlugin(Plugin):
 
     def __media_load_handler(self, data) -> None:
         self.m_media.setStringList(data)
+
+    def __profile_loaded_handler(self, data) -> None:
+        self.m_profiles.setStringList(data)
 
     def __error_handler(self, msg: str) -> None:
         QMessageBox.critical(self._widget, "Error", msg)
