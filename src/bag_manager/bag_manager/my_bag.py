@@ -116,8 +116,31 @@ class Recorder(Node):
             self._get_full_topic_name(SRV_START_STOP),
             self.start_stop_callback
         )
+
+        self.remove_media_service = self.create_service(
+            SetMediaFile,
+            self._get_full_topic_name(SRV_REMOVE_MEDIA),
+            self.remove_media_callback
+        )
     # region service
     # 
+
+    def remove_media_callback(self, request: SetMediaFile.Request, response: SetMediaFile.Response):
+        media_path = Path(self.get_parameter(PARAM_MEDIA_LOCATION).get_parameter_value().string_value)
+        path_to_remove = media_path / request.name
+        if path_to_remove.exists() and path_to_remove.is_dir():
+            try:
+                shutil.rmtree(path_to_remove)
+                response.success = True
+                response.message = f"Removed {request.name}"
+            except Exception as e:
+                response.success = False
+                response.message = f"Failed to remove {request.name}: {str(e)}"
+        else:
+            response.success = False
+            response.message = f"File {request.name} does not exist"
+        return response
+    
     def start_stop_callback(self, request: Trigger.Request, response: Trigger.Response):
         # Implement your start record logic here
         msg = "error start / stop video record"
