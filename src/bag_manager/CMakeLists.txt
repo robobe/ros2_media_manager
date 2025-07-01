@@ -14,7 +14,8 @@ ament_python_install_package(${PROJECT_NAME})
 
 set(NODES
   bag_manager/image2png.py
-)
+  bag_manager/my_bag.py
+  )
 
 
 install(PROGRAMS
