@@ -143,7 +143,7 @@ class MediaManagerRqtPlugin(Plugin):
         QMessageBox.critical(self._widget, "Error", msg)
 
     def on_download_done_handler(self, msg: str):
-        QMessageBox.information(self._widget, f"Download {msg} file complete")
+        QMessageBox.information(self._widget, "info", f"Download {msg} file complete")
 
         
     def set_media_handler(self):
