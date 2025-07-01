@@ -17,7 +17,7 @@
    <property name="geometry">
     <rect>
      <x>30</x>
-     <y>320</y>
+     <y>350</y>
      <width>531</width>
      <height>83</height>
     </rect>
@@ -70,7 +70,7 @@
    <property name="geometry">
     <rect>
      <x>30</x>
-     <y>40</y>
+     <y>70</y>
      <width>531</width>
      <height>241</height>
     </rect>
@@ -125,6 +125,32 @@
        </layout>
       </item>
      </layout>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QWidget" name="horizontalLayoutWidget_2">
+   <property name="geometry">
+    <rect>
+     <x>30</x>
+     <y>10</y>
+     <width>531</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <layout class="QHBoxLayout" name="horizontalLayout_2">
+    <item>
+     <widget class="QRadioButton" name="ra_bag">
+      <property name="text">
+       <string>Bag</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QRadioButton" name="ra_mp4">
+      <property name="text">
+       <string>MP4</string>
+      </property>
+     </widget>
     </item>
    </layout>
   </widget>

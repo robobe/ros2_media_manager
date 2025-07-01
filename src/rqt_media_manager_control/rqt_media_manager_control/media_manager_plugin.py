@@ -5,13 +5,31 @@ from .media_manager_ui_loader import MediaManagerWidget
 from .media_manager_backend import BackendNode
 from PyQt5.QtCore import QStringListModel, Qt
 # from python_qt_binding.QtWidgets import QApplication, QWidget, QVBoxLayout, QListView, QPushButton
-from PyQt5.QtWidgets import QPushButton, QListView, QAbstractItemView, QMessageBox, QLineEdit, QFileDialog
+from PyQt5.QtWidgets import (
+    QPushButton, 
+    QListView, 
+    QAbstractItemView, 
+    QMessageBox, 
+    QLineEdit, 
+    QFileDialog,
+    QRadioButton
+    )
+from functools import partial
+
 
 class MediaManagerRqtPlugin(Plugin):
     def __init__(self, context):
         super().__init__(context)
         self._widget = MediaManagerWidget()
         self._backend = BackendNode()
+
+        self.radio_mp4: QRadioButton = self._widget.ra_mp4
+        self.radio_mp4.toggled.connect(partial(self.on_radio_toggled, "mp4"))
+
+
+        self.radio_bag: QRadioButton = self._widget.ra_bag
+        self.radio_bag.toggled.connect(partial(self.on_radio_toggled, "bag"))
+        self.radio_bag.setChecked(True)
 
         self.cmd_remove_all:QPushButton  = self._widget.cmdRemoveAll
         self.cmd_remove_all.clicked.connect(self.on_remove_all_clicked)
@@ -60,14 +78,10 @@ class MediaManagerRqtPlugin(Plugin):
         self._backend.on_connected += self.on_connected
         context.add_widget(self._widget)
 
-        self.init_backend()
 
 
-    def init_backend(self):
-        try:
-            self._backend.run()
-        except:
-            pass
+    def on_radio_toggled(self, mode):
+        self._backend.set_source(mode)
 
     def on_connected(self):
         self.cmd_remove_all.setEnabled(True)

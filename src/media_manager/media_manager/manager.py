@@ -72,7 +72,9 @@ class MediaManager(Node):
             10
         )
 
-
+    def _get_full_topic_name(self, topic):
+        topic_name = f'/{self.get_name()}/{topic}'
+        return topic_name
 
     def _init_service(self):
         """
@@ -84,29 +86,29 @@ class MediaManager(Node):
         """
         self.remove_all = self.create_service(
             Trigger,
-            SRV_REMOVE_ALL,
+            self._get_full_topic_name(SRV_REMOVE_ALL),
             self.remove_all_callback
         )
 
         self.set_media_name = self.create_service(
             SetMediaFile,
-            SRV_SET_MEDIA_NAME,
+            self._get_full_topic_name(SRV_SET_MEDIA_NAME),
             self.set_media_name_callback
         )
 
         self.start_record_service = self.create_service(
             Trigger,
-            SRV_START_STOP,
+            self._get_full_topic_name(SRV_START_STOP),
             self.start_stop_callback
         )
         self.remove_media_service = self.create_service(
             SetMediaFile,
-            SRV_REMOVE_MEDIA,
+            self._get_full_topic_name(SRV_REMOVE_MEDIA),
             self.remove_media_callback
         )
         self.get_all_media_service = self.create_service(
             GetMediaFileList,
-            SRV_GET_MEDIA_LIST,
+            self._get_full_topic_name(SRV_GET_MEDIA_LIST),
             self.get_all_media_callback
         )
 

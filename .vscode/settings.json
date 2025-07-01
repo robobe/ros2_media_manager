@@ -1,11 +1,11 @@
 {
-//     "terminal.integrated.profiles.linux": {
-//       "bash": {
-//           "path": "bash",
-//           "icon": "terminal-bash",
-//           "args": ["--rcfile", "env.sh"]
-//       }
-//   },
+    "terminal.integrated.profiles.linux": {
+      "bash": {
+          "path": "bash",
+          "icon": "terminal-bash",
+          "args": ["--rcfile", "env.sh"]
+      }
+  },
    "python.autoComplete.extraPaths": [
         "${workspaceFolder}/install/**",
         "${workspaceFolder}/install/media_manager_interfaces/local/lib/python3.10/dist-packages",
