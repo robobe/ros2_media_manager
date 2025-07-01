@@ -11,7 +11,7 @@ from cv_bridge import CvBridge
 import numpy as np
 from sensor_msgs.msg import Image
 from enum import IntEnum
-
+from bfid import draw_binary_on_image
 
 TOPIC_IMG = "/camera/image_raw"
 SRV_START_STOP = "start_stop"
@@ -24,6 +24,7 @@ PARAM_MEDIA_LOCATION = "media_location"
 PARAM_MEDIA_FPS = "media_fps"
 PARAM_MEDIA_WIDTH = "media_width"
 PARAM_MEDIA_HEIGHT = "media_height"
+PARAM_ON_IMAGE_TIME_STAMP = "on_image_time_stamp"
 
 NODE_NAME = "media_manager"
 
@@ -42,6 +43,7 @@ class MediaManager(Node):
         self._init_subscriber()
         self._video_write = None
         self._state = State.STOP
+        self._on_image_time_stamp = self.get_parameter(PARAM_ON_IMAGE_TIME_STAMP).get_parameter_value().bool_value
         self.get_logger().info("Hello ROS2")
 
 
@@ -60,6 +62,7 @@ class MediaManager(Node):
         self.declare_parameter(PARAM_MEDIA_FPS, 20)
         self.declare_parameter(PARAM_MEDIA_WIDTH, 640)
         self.declare_parameter(PARAM_MEDIA_HEIGHT, 480)
+        self.declare_parameter(PARAM_ON_IMAGE_TIME_STAMP, value=True)
 
     def _init_subscriber(self):
         self.create_subscription(
@@ -195,6 +198,8 @@ class MediaManager(Node):
         # Placeholder for image processing logic
         if self._state in [State.START, State.ASK_TO_STOP]:
             frame = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
+            if self._on_image_time_stamp:
+                frame = draw_binary_on_image(frame, msg.header.stamp.sec, msg.header.stamp.nanosec, bit_size=3)
             self._video_write.write(frame)
             if self._state == State.ASK_TO_STOP:
                 self._state = State.STOP
