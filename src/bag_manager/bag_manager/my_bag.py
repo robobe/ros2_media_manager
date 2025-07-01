@@ -28,7 +28,7 @@ SRV_GET_MEDIA_LIST = "get_media_list"
 SRV_SET_MEDIA_NAME = "set_media_name"
 
 PARAM_MEDIA_LOCATION = "media_location"
-
+PARAM_PROFILES = "profiles.default"
 
 class _SubscriberHelper(object):
     """
@@ -76,7 +76,8 @@ class Recorder(Node):
         
         
         self.get_logger().info("start bag manager")
-
+        self.get_logger().warning(f"{self.get_parameter(PARAM_PROFILES).get_parameter_value().string_array_value}")
+        self.get_logger().warning(f"{self.get_parameter('data').get_parameter_value().string_value}")
 
     def _get_full_topic_name(self, topic):
         topic_name = f'/{self.get_name()}/{topic}'
@@ -84,6 +85,10 @@ class Recorder(Node):
 
     def _init_parameters(self):
         self.declare_parameter(PARAM_MEDIA_LOCATION, "/tmp/data")
+        self.declare_parameter(PARAM_PROFILES)
+        self.declare_parameter("data", "")
+
+        
 
     def _init_service(self):
         """
