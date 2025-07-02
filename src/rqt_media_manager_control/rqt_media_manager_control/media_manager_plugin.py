@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from ament_index_python.packages import get_package_share_directory
 from rqt_gui_py.plugin import Plugin
 from .media_manager_ui_loader import MediaManagerWidget
 from .media_manager_backend import BackendNode
@@ -13,16 +14,25 @@ from PyQt5.QtWidgets import (
     QLineEdit, 
     QFileDialog,
     QRadioButton,
-    QComboBox
+    QComboBox,
+    QLabel
     )
+from PyQt5.QtGui import QPixmap
+from pathlib import Path
 from functools import partial
 
+PKG = "rqt_media_manager_control"
 
 class MediaManagerRqtPlugin(Plugin):
     def __init__(self, context):
         super().__init__(context)
         self._widget = MediaManagerWidget()
         self._backend = BackendNode()
+
+        self.icon_label: QLabel = self._widget.icon_label
+        icon_path = Path(get_package_share_directory(PKG)).joinpath("resource").joinpath("red_dot.png").as_posix()
+        self.icon_label.setPixmap(QPixmap(icon_path).scaled(20, 20))
+        self.icon_label.setVisible(False)
 
         self.combo_profiles: QComboBox = self._widget.combo_profiles
         self.m_profiles = QStringListModel()
@@ -188,6 +198,7 @@ class MediaManagerRqtPlugin(Plugin):
         """
         self.cmd_start_record.setEnabled(False)
         self.cmd_stop_record.setEnabled(True)
+        self.icon_label.setVisible(True)
 
     def on_stop_record_handler(self):
         """
@@ -201,4 +212,5 @@ class MediaManagerRqtPlugin(Plugin):
         self.txt_media_name.setText("")
         self.cmd_start_record.setEnabled(False)
         self.cmd_stop_record.setEnabled(False)
+        self.icon_label.setVisible(False)
         self._backend.load_media()
