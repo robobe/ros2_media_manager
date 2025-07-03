@@ -4,7 +4,7 @@ from ament_index_python.packages import get_package_share_directory
 from rqt_gui_py.plugin import Plugin
 from .media_manager_ui_loader import MediaManagerWidget
 from .media_manager_backend import BackendNode
-from PyQt5.QtCore import QStringListModel, Qt
+from PyQt5.QtCore import QStringListModel, Qt, QTimer
 # from python_qt_binding.QtWidgets import QApplication, QWidget, QVBoxLayout, QListView, QPushButton
 from PyQt5.QtWidgets import (
     QPushButton, 
@@ -28,6 +28,15 @@ class MediaManagerRqtPlugin(Plugin):
         super().__init__(context)
         self._widget = MediaManagerWidget()
         self._backend = BackendNode()
+        self.elapsed_seconds = 0
+        
+        # Timer setup
+        self.timer = QTimer(self._widget)
+        self.timer.timeout.connect(self.update_timer)
+        self.timer.setInterval(1000)  # 1 second
+
+        self.la_timer: QLabel = self._widget.la_timer
+        self.la_timer.setVisible(False)
 
         self.icon_label: QLabel = self._widget.icon_label
         icon_path = Path(get_package_share_directory(PKG)).joinpath("resource").joinpath("red_dot.png").as_posix()
@@ -191,6 +200,13 @@ class MediaManagerRqtPlugin(Plugin):
         self.txt_media_name.setEnabled(False)
         self.cmd_start_record.setEnabled(True)
 
+    def update_timer(self):
+        self.elapsed_seconds += 1
+        h = self.elapsed_seconds // 3600
+        m = (self.elapsed_seconds % 3600) // 60
+        s = self.elapsed_seconds % 60
+        self.la_timer.setText(f"{h:02}:{m:02}:{s:02}")
+
     def on_start_record_handler(self):
         """
         - disabled start
@@ -199,6 +215,9 @@ class MediaManagerRqtPlugin(Plugin):
         self.cmd_start_record.setEnabled(False)
         self.cmd_stop_record.setEnabled(True)
         self.icon_label.setVisible(True)
+        self.la_timer.setVisible(True)
+        self.elapsed_seconds = 0
+        self.timer.start()
 
     def on_stop_record_handler(self):
         """
@@ -207,6 +226,9 @@ class MediaManagerRqtPlugin(Plugin):
         - disabled start and stop
         - reload data
         """
+        self.timer.stop()
+        self.la_timer.setText("00:00:00")
+        self.la_timer.setVisible(False)
         self.cmd_set_media.setEnabled(True)
         self.txt_media_name.setEnabled(True)
         self.txt_media_name.setText("")
