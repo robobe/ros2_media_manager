@@ -34,4 +34,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     rsync \
     ros-humble-rqt \
     ros-humble-qt-gui \
+    ros-humble-rosbag2 \
+    ros-humble-rosbag2-storage-mcap
   && rm -rf /var/lib/apt/lists/*
