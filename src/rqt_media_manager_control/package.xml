@@ -2,16 +2,15 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>rqt_media_manager_control</name>
-  <version>0.0.0</version>
-  <description>TODO: Package description</description>
-  <maintainer email="robo2020@gmail.com">user</maintainer>
-  <license>TODO: License declaration</license>
+  <version>0.0.1</version>
+  <description>Media Manager rqt control plugin</description>
+  <maintainer email="dev@gmail.com">user</maintainer>
+  <license>Apache-2.0</license>
 
   <depend>rqt_gui</depend>
   <depend>rqt_gui_py</depend>
   <depend>media_manager_interfaces</depend>
   <depend>rclpy</depend>
-  <depend>media_manager</depend>
   <depend>rqt_py_common</depend>
   <!-- <depend>media_manager_rqt</depend> -->
   <exec_depend>python3-pyqt5</exec_depend>

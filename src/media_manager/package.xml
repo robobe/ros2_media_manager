@@ -2,10 +2,10 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>media_manager</name>
-  <version>0.0.0</version>
-  <description>TODO: Package description</description>
-  <maintainer email="robo2020@gmail.com">user</maintainer>
-  <license>TODO: License declaration</license>
+  <version>0.0.1</version>
+  <description>Save image topic as mp4</description>
+  <maintainer email="dev@gmail.com">user</maintainer>
+  <license>Apache-2.0</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
   <buildtool_depend>ament_cmake_python</buildtool_depend>

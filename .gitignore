@@ -2,3 +2,6 @@ build/
 log/
 install/
 *.pyc
+debian
+.obj*-linux-gnu
+debs/

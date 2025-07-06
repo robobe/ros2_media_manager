@@ -1,0 +1,4 @@
+media_manager_interfaces:
+  ubuntu:
+    apt: ros-humble-media-manager-interfaces
+

@@ -11,6 +11,22 @@
             "kind": "build",
             "isDefault": true
         }
+      },
+      {
+        "label": "build debian",
+        "type": "shell",
+        "command": "bloom-generate rosdebian --ros-distro humble && ./debian_scripts/patch_rules.sh && ./debian_scripts/patch_compat.sh && fakeroot debian/rules binary",
+        "options": {
+            "cwd": "${workspaceFolder}/src/${input:package_name}",
+        }
       }
-    ]
+    ],
+     "inputs": [
+    {
+      "id": "package_name",
+      "type": "pickString",
+      "description": "select package to build",
+      "options": ["bag_manager", "media_manager", "media_manager_interfaces", "rqt_media_manager_control"]
+    }
+  ]
 }

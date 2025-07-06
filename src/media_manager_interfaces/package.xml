@@ -5,7 +5,7 @@
   <version>0.0.1</version>
   <description>Messages and services for media manager</description>
   <maintainer email="dev@gmail.com">user</maintainer>
-  <license>TODO: License declaration</license>
+  <license>Apache-2.0</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
   <test_depend>ament_lint_auto</test_depend>

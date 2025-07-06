@@ -1,4 +1,9 @@
 {
+     "[shellscript]": {
+        "editor.insertSpaces": false,
+        "editor.tabSize": 4,
+        "editor.detectIndentation": false
+    },
     "terminal.integrated.profiles.linux": {
       "bash": {
           "path": "bash",
