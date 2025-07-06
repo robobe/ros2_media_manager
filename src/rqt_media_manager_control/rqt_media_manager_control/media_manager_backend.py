@@ -11,6 +11,8 @@ SRV_REMOVE_MEDIA = "remove_media"
 SRV_REMOVE_ALL = "remove_all_media"
 SRV_GET_MEDIA_LIST = "get_media_list"
 SRV_SET_MEDIA_NAME = "set_media_name"
+SRV_GET_PROFILE_LIST = "get_profile_list"
+
 NODE_NAME = "media_manager"
 
 SERVICE_CALL_TIMEOUT = 4
@@ -31,13 +33,16 @@ class Event:
 class BackendNode(Node):
     def __init__(self):
         super().__init__('my_plugin_backend')
-        self.__load_media_client = self.create_client(GetMediaFileList, SRV_GET_MEDIA_LIST)
-        self.__remove_media_client = self.create_client(SetMediaFile, SRV_REMOVE_MEDIA)
-        self.__set_media_client = self.create_client(SetMediaFile, SRV_SET_MEDIA_NAME)
-        self.__start_stop_client = self.create_client(Trigger, SRV_START_STOP)
-        self.__remove_all_client = self.create_client(Trigger, SRV_REMOVE_ALL)
-        self.__get_media_location_client = self.create_client(GetParameters, f'/{NODE_NAME}/get_parameters')
+        self.__source = ""
+        self.__load_media_client = None#self.create_client(GetMediaFileList, SRV_GET_MEDIA_LIST)
+        self.__remove_media_client = None#
+        self.__set_media_client = None#
+        self.__start_stop_client = None # 
+        self.__remove_all_client = None
+        self.__get_media_location_client = None
+        self.__load_profile_client = None
 
+        self.on_profile_fetch = Event()
         self.on_media_list_fetch = Event()
         self.on_error = Event()
         self.on_set_media = Event()
@@ -45,6 +50,49 @@ class BackendNode(Node):
         self.on_stop_record = Event()
         self.on_download_done = Event()
         self.on_connected = Event()
+
+    def _get_full_topic_name(self, topic):
+        topic_name = f'/{self.__source}/{topic}'
+        return topic_name
+
+    def _init_service(self):
+        if self.__load_profile_client is not None:
+            self.__load_media_client.destroy()
+        self.__load_profile_client = self.create_client(GetMediaFileList, self._get_full_topic_name(SRV_GET_PROFILE_LIST))
+
+        if self.__load_media_client is not None:
+            self.__load_media_client.destroy()
+        self.__load_media_client = self.create_client(GetMediaFileList, self._get_full_topic_name(SRV_GET_MEDIA_LIST))
+
+        if self.__remove_media_client is not None:
+            self.__remove_media_client.destroy()
+        self.__remove_media_client = self.create_client(SetMediaFile, self._get_full_topic_name(SRV_REMOVE_MEDIA))
+
+        if self.__set_media_client is not None:
+            self.__set_media_client.destroy()
+        self.__set_media_client = self.create_client(SetMediaFile, self._get_full_topic_name(SRV_SET_MEDIA_NAME))
+
+        if self.__start_stop_client is not None:
+            self.__start_stop_client.destroy()
+        self.__start_stop_client = self.create_client(Trigger, self._get_full_topic_name(SRV_START_STOP))
+
+        if self.__remove_all_client is not None:
+            self.__remove_all_client.destroy()
+        self.__remove_all_client = self.create_client(Trigger, self._get_full_topic_name(SRV_REMOVE_ALL))
+
+        if self.__get_media_location_client is not None:
+            self.__get_media_location_client.destroy()
+        self.__get_media_location_client = self.create_client(GetParameters, self._get_full_topic_name("get_parameters"))
+
+    def set_source(self, source):
+        #TODO move to enum and do better
+        if source == "mp4":
+            self.__source = "media_manager"
+        else:
+            self.__source = "my_bag_record"
+        self.get_logger().info(f"--------- init server for source: {self.__source}")
+        self._init_service()
+        self.run()
 
 
     def wait_for_service_handler(self, service):
@@ -60,15 +108,20 @@ class BackendNode(Node):
                 self.get_logger().error(msg)
                 raise Exception(msg)
 
+    
+    
     def run(self):
-        self.wait_for_service_handler(self.__load_media_client)
-        self.wait_for_service_handler(self.__remove_all_client)
+        try:
+            self.wait_for_service_handler(self.__load_media_client)
+            self.wait_for_service_handler(self.__remove_all_client)
 
 
-        self.load_media()
-        self.get_media_location_param()
-        self.on_connected.fire()
-
+            self.load_media()
+            self.load_profiles()
+            self.get_media_location_param()
+            self.on_connected.fire()
+        except:
+            self.on_error.fire("Failed to load remote service")
 
     def get_media_location_param(self):
         request = GetParameters.Request()
@@ -89,6 +142,22 @@ class BackendNode(Node):
         else:
             self.get_logger().error("Service call failed")
 
+    def load_profiles(self):
+        self.req = GetMediaFileList.Request()
+        future = self.__load_profile_client.call_async(self.req)
+        rclpy.spin_until_future_complete(self, future, timeout_sec=SERVICE_CALL_TIMEOUT)
+        if not future.done():
+            self.get_logger().error("Timeout while loading media files")
+            self.on_error.fire("Timeout while loading media files")
+            return
+        if future.result() is not None:
+            response: GetMediaFileList.Response
+            response = future.result()
+            self.on_profile_fetch.fire(response.file_list)
+            self.get_logger().info(f"Media files: {future.result().file_list}")
+        else:
+            self.get_logger().error("load media service failed")
+            self.on_error.fire("load media service failed")
 
     def load_media(self):
         self.req = GetMediaFileList.Request()

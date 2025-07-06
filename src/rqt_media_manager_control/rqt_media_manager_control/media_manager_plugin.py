@@ -1,17 +1,60 @@
 #!/usr/bin/env python3
 
+from ament_index_python.packages import get_package_share_directory
 from rqt_gui_py.plugin import Plugin
 from .media_manager_ui_loader import MediaManagerWidget
 from .media_manager_backend import BackendNode
-from PyQt5.QtCore import QStringListModel, Qt
+from PyQt5.QtCore import QStringListModel, Qt, QTimer
 # from python_qt_binding.QtWidgets import QApplication, QWidget, QVBoxLayout, QListView, QPushButton
-from PyQt5.QtWidgets import QPushButton, QListView, QAbstractItemView, QMessageBox, QLineEdit, QFileDialog
+from PyQt5.QtWidgets import (
+    QPushButton, 
+    QListView, 
+    QAbstractItemView, 
+    QMessageBox, 
+    QLineEdit, 
+    QFileDialog,
+    QRadioButton,
+    QComboBox,
+    QLabel
+    )
+from PyQt5.QtGui import QPixmap
+from pathlib import Path
+from functools import partial
+
+PKG = "rqt_media_manager_control"
 
 class MediaManagerRqtPlugin(Plugin):
     def __init__(self, context):
         super().__init__(context)
         self._widget = MediaManagerWidget()
         self._backend = BackendNode()
+        self.elapsed_seconds = 0
+        
+        # Timer setup
+        self.timer = QTimer(self._widget)
+        self.timer.timeout.connect(self.update_timer)
+        self.timer.setInterval(1000)  # 1 second
+
+        self.la_timer: QLabel = self._widget.la_timer
+        self.la_timer.setVisible(False)
+
+        self.icon_label: QLabel = self._widget.icon_label
+        icon_path = Path(get_package_share_directory(PKG)).joinpath("resource").joinpath("red_dot.png").as_posix()
+        self.icon_label.setPixmap(QPixmap(icon_path).scaled(20, 20))
+        self.icon_label.setVisible(False)
+
+        self.combo_profiles: QComboBox = self._widget.combo_profiles
+        self.m_profiles = QStringListModel()
+        self.m_profiles.setStringList([])
+        self.combo_profiles.setModel(self.m_profiles)
+
+        self.radio_mp4: QRadioButton = self._widget.ra_mp4
+        self.radio_mp4.toggled.connect(partial(self.on_radio_toggled, "mp4"))
+
+
+        self.radio_bag: QRadioButton = self._widget.ra_bag
+        self.radio_bag.toggled.connect(partial(self.on_radio_toggled, "bag"))
+        self.radio_bag.setChecked(True)
 
         self.cmd_remove_all:QPushButton  = self._widget.cmdRemoveAll
         self.cmd_remove_all.clicked.connect(self.on_remove_all_clicked)
@@ -58,16 +101,13 @@ class MediaManagerRqtPlugin(Plugin):
         self._backend.on_stop_record += self.on_stop_record_handler
         self._backend.on_download_done += self.on_download_done_handler
         self._backend.on_connected += self.on_connected
+        self._backend.on_profile_fetch += self.__profile_loaded_handler
         context.add_widget(self._widget)
+        self._backend.set_source("bag")
 
-        self.init_backend()
 
-
-    def init_backend(self):
-        try:
-            self._backend.run()
-        except:
-            pass
+    def on_radio_toggled(self, mode):
+        self._backend.set_source(mode)
 
     def on_connected(self):
         self.cmd_remove_all.setEnabled(True)
@@ -139,11 +179,14 @@ class MediaManagerRqtPlugin(Plugin):
     def __media_load_handler(self, data) -> None:
         self.m_media.setStringList(data)
 
+    def __profile_loaded_handler(self, data) -> None:
+        self.m_profiles.setStringList(data)
+
     def __error_handler(self, msg: str) -> None:
         QMessageBox.critical(self._widget, "Error", msg)
 
     def on_download_done_handler(self, msg: str):
-        QMessageBox.information(self._widget, f"Download {msg} file complete")
+        QMessageBox.information(self._widget, "info", f"Download {msg} file complete")
 
         
     def set_media_handler(self):
@@ -157,6 +200,13 @@ class MediaManagerRqtPlugin(Plugin):
         self.txt_media_name.setEnabled(False)
         self.cmd_start_record.setEnabled(True)
 
+    def update_timer(self):
+        self.elapsed_seconds += 1
+        h = self.elapsed_seconds // 3600
+        m = (self.elapsed_seconds % 3600) // 60
+        s = self.elapsed_seconds % 60
+        self.la_timer.setText(f"{h:02}:{m:02}:{s:02}")
+
     def on_start_record_handler(self):
         """
         - disabled start
@@ -164,6 +214,10 @@ class MediaManagerRqtPlugin(Plugin):
         """
         self.cmd_start_record.setEnabled(False)
         self.cmd_stop_record.setEnabled(True)
+        self.icon_label.setVisible(True)
+        self.la_timer.setVisible(True)
+        self.elapsed_seconds = 0
+        self.timer.start()
 
     def on_stop_record_handler(self):
         """
@@ -172,9 +226,13 @@ class MediaManagerRqtPlugin(Plugin):
         - disabled start and stop
         - reload data
         """
+        self.timer.stop()
+        self.la_timer.setText("00:00:00")
+        self.la_timer.setVisible(False)
         self.cmd_set_media.setEnabled(True)
         self.txt_media_name.setEnabled(True)
         self.txt_media_name.setText("")
         self.cmd_start_record.setEnabled(False)
         self.cmd_stop_record.setEnabled(False)
+        self.icon_label.setVisible(False)
         self._backend.load_media()

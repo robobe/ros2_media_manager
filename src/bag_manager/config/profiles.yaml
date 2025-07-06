@@ -1,0 +1,6 @@
+profiles:
+  default:
+    - /camera/image_raw/compressed
+    - /xxx
+  camera:
+    - /camera/image_raw/compressed

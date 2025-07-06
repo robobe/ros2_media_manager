@@ -54,3 +54,37 @@ Enter media name and click `Set` the set operation prepared the media file but *
 ### Todo:
 - Add pause operation
 - subscribe to image_info message
+- disabled remove all and remove in mode start
+
+
+```
+#https://mcap.dev/guides/python/ros2
+
+from rclpy.serialization import serialize_message
+from std_msgs.msg import String
+import rosbag2_py
+
+writer = rosbag2_py.SequentialWriter()
+writer.open(
+    rosbag2_py.StorageOptions(uri="output.mcap", storage_id="mcap"),
+    rosbag2_py.ConverterOptions(
+        input_serialization_format="cdr", output_serialization_format="cdr"
+    ),
+)
+
+writer.create_topic(
+    rosbag2_py.TopicMetadata(
+        name="/chatter", type="std_msgs/msg/String", serialization_format="cdr"
+    )
+)
+
+start_time = 0
+for i in range(10):
+    msg = String()
+    msg.data = f"Chatter #{i}"
+    timestamp = start_time + (i * 100)
+    writer.write("/chatter", serialize_message(msg), timestamp)
+
+
+del writer
+```

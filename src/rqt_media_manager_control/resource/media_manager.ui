@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>608</width>
-    <height>471</height>
+    <width>632</width>
+    <height>627</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,21 +17,45 @@
    <property name="geometry">
     <rect>
      <x>30</x>
-     <y>320</y>
+     <y>380</y>
      <width>531</width>
-     <height>83</height>
+     <height>91</height>
     </rect>
    </property>
    <layout class="QVBoxLayout" name="layoutNewMedia">
-    <item alignment="Qt::AlignLeft|Qt::AlignTop">
-     <widget class="QLabel" name="laNewMedia">
-      <property name="text">
-       <string>New Media</string>
-      </property>
-      <property name="textFormat">
-       <enum>Qt::RichText</enum>
-      </property>
-     </widget>
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout_4">
+      <item>
+       <widget class="QLabel" name="laNewMedia">
+        <property name="text">
+         <string>New Media</string>
+        </property>
+        <property name="textFormat">
+         <enum>Qt::RichText</enum>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="icon_label">
+        <property name="text">
+         <string>Icon</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="la_timer">
+        <property name="text">
+         <string>00:00:00</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+     </layout>
     </item>
     <item>
      <widget class="QLineEdit" name="mediaName"/>
@@ -70,7 +94,7 @@
    <property name="geometry">
     <rect>
      <x>30</x>
-     <y>40</y>
+     <y>70</y>
      <width>531</width>
      <height>241</height>
     </rect>
@@ -125,6 +149,54 @@
        </layout>
       </item>
      </layout>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QWidget" name="horizontalLayoutWidget_2">
+   <property name="geometry">
+    <rect>
+     <x>30</x>
+     <y>10</y>
+     <width>531</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <layout class="QHBoxLayout" name="horizontalLayout_2">
+    <item>
+     <widget class="QRadioButton" name="ra_bag">
+      <property name="text">
+       <string>Bag</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QRadioButton" name="ra_mp4">
+      <property name="text">
+       <string>MP4</string>
+      </property>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QWidget" name="horizontalLayoutWidget_3">
+   <property name="geometry">
+    <rect>
+     <x>30</x>
+     <y>320</y>
+     <width>531</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <layout class="QHBoxLayout" name="horizontalLayout_3">
+    <item>
+     <widget class="QLabel" name="label">
+      <property name="text">
+       <string>Profile/Topic</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QComboBox" name="combo_profiles"/>
     </item>
    </layout>
   </widget>

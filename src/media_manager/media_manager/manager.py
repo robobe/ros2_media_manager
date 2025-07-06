@@ -11,7 +11,7 @@ from cv_bridge import CvBridge
 import numpy as np
 from sensor_msgs.msg import Image
 from enum import IntEnum
-
+from bfid import draw_binary_on_image
 
 TOPIC_IMG = "/camera/image_raw"
 SRV_START_STOP = "start_stop"
@@ -19,11 +19,13 @@ SRV_REMOVE_MEDIA = "remove_media"
 SRV_REMOVE_ALL = "remove_all_media"
 SRV_GET_MEDIA_LIST = "get_media_list"
 SRV_SET_MEDIA_NAME = "set_media_name"
+SRV_GET_PROFILE_LIST = "get_profile_list"
 
 PARAM_MEDIA_LOCATION = "media_location"
 PARAM_MEDIA_FPS = "media_fps"
 PARAM_MEDIA_WIDTH = "media_width"
 PARAM_MEDIA_HEIGHT = "media_height"
+PARAM_ON_IMAGE_TIME_STAMP = "on_image_time_stamp"
 
 NODE_NAME = "media_manager"
 
@@ -42,6 +44,7 @@ class MediaManager(Node):
         self._init_subscriber()
         self._video_write = None
         self._state = State.STOP
+        self._on_image_time_stamp = self.get_parameter(PARAM_ON_IMAGE_TIME_STAMP).get_parameter_value().bool_value
         self.get_logger().info("Hello ROS2")
 
 
@@ -60,6 +63,7 @@ class MediaManager(Node):
         self.declare_parameter(PARAM_MEDIA_FPS, 20)
         self.declare_parameter(PARAM_MEDIA_WIDTH, 640)
         self.declare_parameter(PARAM_MEDIA_HEIGHT, 480)
+        self.declare_parameter(PARAM_ON_IMAGE_TIME_STAMP, value=True)
 
     def _init_subscriber(self):
         self.create_subscription(
@@ -69,7 +73,9 @@ class MediaManager(Node):
             10
         )
 
-
+    def _get_full_topic_name(self, topic):
+        topic_name = f'/{self.get_name()}/{topic}'
+        return topic_name
 
     def _init_service(self):
         """
@@ -79,31 +85,37 @@ class MediaManager(Node):
         remove all
         get media list
         """
+        self.get_all_media_service = self.create_service(
+            GetMediaFileList,
+            self._get_full_topic_name(SRV_GET_PROFILE_LIST),
+            self.get_all_profiles_callback
+        )
+
         self.remove_all = self.create_service(
             Trigger,
-            SRV_REMOVE_ALL,
+            self._get_full_topic_name(SRV_REMOVE_ALL),
             self.remove_all_callback
         )
 
         self.set_media_name = self.create_service(
             SetMediaFile,
-            SRV_SET_MEDIA_NAME,
+            self._get_full_topic_name(SRV_SET_MEDIA_NAME),
             self.set_media_name_callback
         )
 
         self.start_record_service = self.create_service(
             Trigger,
-            SRV_START_STOP,
+            self._get_full_topic_name(SRV_START_STOP),
             self.start_stop_callback
         )
         self.remove_media_service = self.create_service(
             SetMediaFile,
-            SRV_REMOVE_MEDIA,
+            self._get_full_topic_name(SRV_REMOVE_MEDIA),
             self.remove_media_callback
         )
         self.get_all_media_service = self.create_service(
             GetMediaFileList,
-            SRV_GET_MEDIA_LIST,
+            self._get_full_topic_name(SRV_GET_MEDIA_LIST),
             self.get_all_media_callback
         )
 
@@ -188,6 +200,10 @@ class MediaManager(Node):
         mp4_files = [f.name for f in media_path.glob("*.mp4") if f.is_file()]
         response.file_list = mp4_files
         return response
+    
+    def get_all_profiles_callback(self, request: GetMediaFileList.Request, response: GetMediaFileList.Response):
+        response.file_list = []
+        return response
     #endregion services callback
 
     #region subscribers callbacks
@@ -195,6 +211,8 @@ class MediaManager(Node):
         # Placeholder for image processing logic
         if self._state in [State.START, State.ASK_TO_STOP]:
             frame = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
+            if self._on_image_time_stamp:
+                frame = draw_binary_on_image(frame, msg.header.stamp.sec, msg.header.stamp.nanosec, bit_size=3)
             self._video_write.write(frame)
             if self._state == State.ASK_TO_STOP:
                 self._state = State.STOP
