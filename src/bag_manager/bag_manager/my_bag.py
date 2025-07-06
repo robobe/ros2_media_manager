@@ -42,7 +42,7 @@ class _SubscriberHelper(object):
         self.recorder: 'Recorder' = recorder
         self.topic = topic
         self.msg_type_name = msg_type_name
-
+        self.node = node
         # Get all of the QoS profiles for this topic
         qos_profiles = get_qos_profiles_for_topic(node, self.topic)
         if qos_profiles:
@@ -57,6 +57,9 @@ class _SubscriberHelper(object):
 
     def callback(self, msg: Any) -> None:
         self.recorder._record(self.topic, msg, self.msg_type_name)
+
+    def close(self):
+        self.node.destroy_subscription(self.subscriber)
 
 NODE_NAME = "my_bag_record"
 
@@ -338,7 +341,21 @@ class Recorder(Node):
         except Exception as ex:
             self.get_logger().error(f"Error recording to bag: {ex} ")
 
+    def _close_subscribers(self):
+        """
+        close subscriber
+        clear all register subscribers
+        """
+        subscriber: _SubscriberHelper
+        for topic, subscriber in self._subscriber_helpers.items():
+            try:
+                subscriber.close()
+            except:
+                self.get_logger().error(f"Failed to close subscriber for topic: {topic}")
 
+        #  clear all 
+        self._subscriber_helpers.clear()
+        
     def _run_write(self):
         """
         Write data to bag
@@ -369,7 +386,10 @@ class Recorder(Node):
             self.rosbag_writer.close()
 
         except Exception as ex:
-            self.get_logger().error('Error writing to bag: {ex}')
+            self.get_logger().error(f'Error writing to bag: {ex}')
+        finally:
+            self._close_subscribers()
+            
 
     def _should_subscribe_to(self, topic):
         return topic in self.topics
