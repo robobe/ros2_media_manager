@@ -17,9 +17,19 @@ set(NODES
   bag_manager/my_bag.py
   )
 
+set(FILES
+  bag_manager/qos.py
+  bag_manager/rosbag2.py
+  )
+
 
 install(PROGRAMS
     ${NODES}
+DESTINATION lib/${PROJECT_NAME}
+)
+
+install(FILES
+    ${FILES}
 DESTINATION lib/${PROJECT_NAME}
 )
 
@@ -28,6 +38,8 @@ install(DIRECTORY
     config
   DESTINATION share/${PROJECT_NAME}
 )
+
+
 
 if(BUILD_TESTING)
   
