@@ -1,32 +1,73 @@
 {
-    "version": "2.0.0",
-    "tasks": [
-      {
-        "label": "colcon",
-        "detail": "Build all ros2 packages using colcon",
-        "type": "shell",
-        "command": "colcon build",
-        "problemMatcher": [],
-        "group": {
-            "kind": "build",
-            "isDefault": true
-        }
-      },
-      {
-        "label": "build debian",
-        "type": "shell",
-        "command": "bloom-generate rosdebian --ros-distro humble && ./debian_scripts/patch_rules.sh && ./debian_scripts/patch_compat.sh && fakeroot debian/rules binary",
-        "options": {
-            "cwd": "${workspaceFolder}/src/${input:package_name}",
-        }
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "colcon",
+      "detail": "Build all ros2 packages using colcon",
+      "type": "shell",
+      "command": "colcon build",
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": true
       }
-    ],
-     "inputs": [
+    },
+    {
+      "label": "build debian",
+      "type": "shell",
+      "command": "bloom-generate rosdebian --ros-distro humble && ./debian_scripts/patch_rules.sh && ./debian_scripts/patch_compat.sh && fakeroot debian/rules binary",
+      "options": {
+        "cwd": "${workspaceFolder}/src/${input:package_name}",
+      },
+      "problemMatcher": [],
+      "detail": "Build selected package as debian"
+    },
+    {
+      "label": "Check debian package",
+      "type": "shell",
+      "command": "dpkg",
+      "args": [
+          "-c",
+          "${input:file_path}"
+        ],
+      "problemMatcher": [],
+      "detail": "Check debian package contents"
+    },
+    {
+      "label": "Path rosdep",
+      "type": "shell",
+      "command": "sudo bash ${workspaceFolder}/scripts/path_rosdep.sh",
+      "problemMatcher": [],
+      "detail": "Add local rosdep path"
+    },
+    {
+      "label": "Update rosdep",
+      "type": "shell",
+      "command": "rosdep update --rosdistro $ROS_DISTRO",
+      "problemMatcher": [],
+      "detail": "Add local rosdep path",
+      "dependsOn": "Path rosdep"
+    }
+  ],
+  "inputs": [
+    {
+      "id": "file_path",
+      "type": "command",
+      "command": "extension.commandvariable.file.pickFile",
+      "args": {
+        "include": "debs/*.deb"
+      }
+    },
     {
       "id": "package_name",
       "type": "pickString",
       "description": "select package to build",
-      "options": ["bag_manager", "media_manager", "media_manager_interfaces", "rqt_media_manager_control"]
+      "options": [
+        "bag_manager",
+        "media_manager",
+        "media_manager_interfaces",
+        "rqt_media_manager_control"
+      ]
     }
   ]
 }
