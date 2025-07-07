@@ -16,9 +16,17 @@ set(NODES
   media_manager/manager.py
 )
 
+set(FILES
+  media_manager/bfid.py
+  )
 
 install(PROGRAMS
     ${NODES}
+DESTINATION lib/${PROJECT_NAME}
+)
+
+install(FILES
+    ${FILES}
 DESTINATION lib/${PROJECT_NAME}
 )
 
