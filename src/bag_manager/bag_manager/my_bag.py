@@ -16,7 +16,7 @@ from rclpy.clock import Clock, ClockType
 from qos import gen_subscriber_qos_profile, get_qos_profiles_for_topic, qos_profiles_to_yaml
 from rosidl_runtime_py.utilities import get_message
 from std_srvs.srv import Trigger
-from media_manager_interfaces.srv import GetMediaFileList, SetMediaFile
+from media_manager_interfaces.srv import GetMediaFileList, SetStringArray
 from pathlib import Path
 import shutil
 import yaml
@@ -168,7 +168,7 @@ class Recorder(Node):
         )
 
         self.set_media_name = self.create_service(
-            SetMediaFile,
+            SetStringArray,
             self._get_full_topic_name(SRV_SET_MEDIA_NAME),
             self.set_media_name_callback
         )
@@ -198,27 +198,28 @@ class Recorder(Node):
         )
 
         self.remove_media_service = self.create_service(
-            SetMediaFile,
+            SetStringArray,
             self._get_full_topic_name(SRV_REMOVE_MEDIA),
             self.remove_media_callback
         )
     # region service
     # 
 
-    def remove_media_callback(self, request: SetMediaFile.Request, response: SetMediaFile.Response):
+    def remove_media_callback(self, request: SetStringArray.Request, response: SetStringArray.Response):
         media_path = Path(self.get_parameter(PARAM_MEDIA_LOCATION).get_parameter_value().string_value)
-        path_to_remove = media_path / request.name
+        name = request.data[0] if request.data else request.name
+        path_to_remove = media_path / name
         if path_to_remove.exists() and path_to_remove.is_dir():
             try:
                 shutil.rmtree(path_to_remove)
                 response.success = True
-                response.message = f"Removed {request.name}"
+                response.message = f"Removed {name}"
             except Exception as e:
                 response.success = False
-                response.message = f"Failed to remove {request.name}: {str(e)}"
+                response.message = f"Failed to remove {name}: {str(e)}"
         else:
             response.success = False
-            response.message = f"File {request.name} does not exist"
+            response.message = f"File {name} does not exist"
         return response
     
     def start_stop_callback(self, request: Trigger.Request, response: Trigger.Response):
@@ -255,12 +256,12 @@ class Recorder(Node):
         response.message = data
         return response
 
-    def set_media_name_callback(self, request: SetMediaFile.Request, response: SetMediaFile.Response):
+    def set_media_name_callback(self, request: SetStringArray.Request, response: SetStringArray.Response):
         """
         TODO: create logic method
         """
         media_path = Path(self.get_parameter(PARAM_MEDIA_LOCATION).get_parameter_value().string_value)
-        filename = request.name
+        filename = request.data[0]
 
         self._current_file_path = media_path / filename
         if self._current_file_path.exists():

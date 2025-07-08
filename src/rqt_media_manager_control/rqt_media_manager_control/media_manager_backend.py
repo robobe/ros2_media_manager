@@ -1,7 +1,7 @@
 import rclpy
 from rclpy.node import Node
 from std_srvs.srv import Trigger
-from media_manager_interfaces.srv import GetMediaFileList, SetMediaFile
+from media_manager_interfaces.srv import GetMediaFileList, SetStringArray
 from rcl_interfaces.srv import GetParameters
 import subprocess
 import pathlib
@@ -73,11 +73,11 @@ class BackendNode(Node):
 
         if self.__remove_media_client is not None:
             self.__remove_media_client.destroy()
-        self.__remove_media_client = self.create_client(SetMediaFile, self._get_full_topic_name(SRV_REMOVE_MEDIA))
+        self.__remove_media_client = self.create_client(SetStringArray, self._get_full_topic_name(SRV_REMOVE_MEDIA))
 
         if self.__set_media_client is not None:
             self.__set_media_client.destroy()
-        self.__set_media_client = self.create_client(SetMediaFile, self._get_full_topic_name(SRV_SET_MEDIA_NAME))
+        self.__set_media_client = self.create_client(SetStringArray, self._get_full_topic_name(SRV_SET_MEDIA_NAME))
 
         if self.__start_stop_client is not None:
             self.__start_stop_client.destroy()
@@ -211,8 +211,8 @@ class BackendNode(Node):
             self.on_error.fire("load media service failed")
 
     def remove_media(self, file_name):
-        req: SetMediaFile.Request = SetMediaFile.Request()
-        req.name = file_name
+        req: SetStringArray.Request = SetStringArray.Request()
+        req.data.append(file_name)
         future = self.__remove_media_client.call_async(req)
         rclpy.spin_until_future_complete(self, future, timeout_sec=SERVICE_CALL_TIMEOUT)
         if not future.done():
@@ -221,19 +221,19 @@ class BackendNode(Node):
             self.on_error.fire(msg)
             return
         if future.result() is not None:
-            response: SetMediaFile.Response = future.result()
+            response: SetStringArray.Response = future.result()
             if response.success:
                 self.load_media()
         else:
             self.get_logger().error(f"Failed to remove media: {file_name}")
 
     def set_media(self, file_name):
-        req: SetMediaFile.Request = SetMediaFile.Request()
-        req.name = file_name
+        req: SetStringArray.Request = SetStringArray.Request()
+        req.data.append(file_name)
         future = self.__set_media_client.call_async(req)
         rclpy.spin_until_future_complete(self, future)
         if future.result() is not None:
-            response: SetMediaFile.Response = future.result()
+            response: SetStringArray.Response = future.result()
             if response.success:
                 self.on_set_media.fire()
             else:
@@ -275,6 +275,35 @@ class BackendNode(Node):
             self.get_logger().error(f"Failed start / stop record media")
             self.on_error(response.message)
 
+    def import_profile(self, file_name):
+        """
+        Import profile from yaml file
+        """
+        with open(file_name, 'r') as f:
+            yaml_obj = yaml.safe_load(f)
+
+        req: SetStringArray.Request = SetStringArray.Request()
+        req.name = yaml_obj.get("name", "default_profile")
+        req.yaml_content = yaml.dump(yaml_obj, default_flow_style=False, sort_keys=False)
+
+        future = self.__set_media_client.call_async(req)
+        rclpy.spin_until_future_complete(self, future, timeout_sec=SERVICE_CALL_TIMEOUT)
+        if not future.done():
+            msg = "Timeout while importing profile"
+            self.get_logger().error(msg)
+            self.on_error.fire(msg)
+            return
+        if future.result() is not None:
+            response: SetStringArray.Response = future.result()
+            if response.success:
+                self.load_profiles()
+                self.get_logger().info(f"Profile imported: {req.name}")
+            else:
+                self.get_logger().error(f"Failed import profile: {response.message}")
+                self.on_error.fire(response.message)
+
+
+                
     def export_profile(self, target_folder):
         """
         """
