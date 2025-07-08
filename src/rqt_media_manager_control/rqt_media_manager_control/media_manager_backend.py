@@ -14,6 +14,7 @@ SRV_GET_MEDIA_LIST = "get_media_list"
 SRV_SET_MEDIA_NAME = "set_media_name"
 SRV_GET_PROFILE_LIST = "get_profile_list"
 SRV_EXPORT_PROFILE = "export_profile"
+SRV_IMPORT_PROFILE = "import_profile"
 
 
 NODE_NAME = "media_manager"
@@ -43,6 +44,7 @@ class BackendNode(Node):
         self.__start_stop_client = None # 
         self.__remove_all_client = None
         self.__export_profile_client = None
+        self.__import_profile_client = None
         self.__get_media_location_client = None
         self.__load_profile_client = None
         self.__selected_profile = None
@@ -94,7 +96,10 @@ class BackendNode(Node):
         if self.__export_profile_client is not None:
             self.__export_profile_client.destroy()
         self.__export_profile_client = self.create_client(Trigger, self._get_full_topic_name(SRV_EXPORT_PROFILE))
-        
+
+        if self.__import_profile_client is not None:
+            self.__import_profile_client.destroy()
+        self.__import_profile_client = self.create_client(SetStringArray, self._get_full_topic_name(SRV_IMPORT_PROFILE))
 
     def set_profile(self, profile_name):
         self.__selected_profile = profile_name
@@ -283,24 +288,27 @@ class BackendNode(Node):
             yaml_obj = yaml.safe_load(f)
 
         req: SetStringArray.Request = SetStringArray.Request()
-        req.name = yaml_obj.get("name", "default_profile")
-        req.yaml_content = yaml.dump(yaml_obj, default_flow_style=False, sort_keys=False)
-
-        future = self.__set_media_client.call_async(req)
+        req.data.append(yaml.dump(yaml_obj, default_flow_style=False, sort_keys=False))
+        future = self.__import_profile_client.call_async(req)
         rclpy.spin_until_future_complete(self, future, timeout_sec=SERVICE_CALL_TIMEOUT)
+
         if not future.done():
             msg = "Timeout while importing profile"
             self.get_logger().error(msg)
             self.on_error.fire(msg)
             return
         if future.result() is not None:
-            response: SetStringArray.Response = future.result()
+            response = future.result()
             if response.success:
+
+
                 self.load_profiles()
-                self.get_logger().info(f"Profile imported: {req.name}")
-            else:
-                self.get_logger().error(f"Failed import profile: {response.message}")
-                self.on_error.fire(response.message)
+                self.get_logger().info(f"Profile imported from {file_name}")
+        else:
+            self.get_logger().error(f"Failed export profile")
+            self.on_error(response.message)
+
+
 
 
                 

@@ -32,6 +32,7 @@ SRV_GET_MEDIA_LIST = "get_media_list"
 SRV_GET_PROFILE_LIST = "get_profile_list"
 SRV_SET_MEDIA_NAME = "set_media_name"
 SRV_EXPORT_PROFILE = "export_profile"
+SRV_IMPORT_PROFILE = "import_profile"
 
 PARAM_MEDIA_LOCATION = "media_location"
 PARAM_PROFILE_LOCATION = "profile_location"
@@ -96,7 +97,6 @@ class Recorder(Node):
         self._init_parameters()
         self._init_service()
         self._load_profile()
-        self._add_profile(None)
         self.topics = []
         
         
@@ -109,6 +109,7 @@ class Recorder(Node):
     def _load_profile(self):
         profile_path = Path(self.get_parameter(PARAM_PROFILE_LOCATION).get_parameter_value().string_value)
         if not profile_path.exists():
+            self.get_logger().warning(f"Profile file not found: {profile_path.as_posix()}. Using default profile.")
             profile_path = Path(get_package_share_directory("bag_manager")).joinpath("config").joinpath(PROFILE_FILE_NAME)
             if not profile_path.exists():
                 self.get_logger().error(f"No profile file: {profile_path}")
@@ -165,6 +166,12 @@ class Recorder(Node):
             Trigger,
             self._get_full_topic_name(SRV_EXPORT_PROFILE),
             self.export_profiles_callback
+        )
+
+        self.import_profile = self.create_service(
+            SetStringArray,
+            self._get_full_topic_name(SRV_IMPORT_PROFILE),
+            self.import_profiles_callback
         )
 
         self.set_media_name = self.create_service(
@@ -242,6 +249,39 @@ class Recorder(Node):
         response.success = True
         response.message = msg
         return response
+
+    def import_profiles_callback(self, request: SetStringArray.Request, response: SetStringArray.Response):
+        """
+        Import profiles from yaml file
+        """
+        response.success = False
+        response.message = "Failed to import profiles"
+        
+        if not request.data:
+            response.message = "No data provided"
+            return response
+        
+        try:
+            yaml_data = yaml.safe_load(request.data[0])
+            if not yaml_data or "profiles" not in yaml_data:
+                response.message = "Invalid profile data"
+                return response
+            
+            self._profiles = Profiles(
+                profiles=[Profile(id=key, topics=topics) for key, topics in yaml_data["profiles"].items()]
+            )
+            
+            # Save the imported profiles to the file
+            profile_path = Path(self.get_parameter(PARAM_PROFILE_LOCATION).get_parameter_value().string_value)
+            with open(profile_path, 'w') as f:
+                yaml.dump(yaml_data, f, default_flow_style=False)
+            
+            response.success = True
+            response.message = "Profiles imported successfully"
+        except Exception as e:
+            self.get_logger().error(f"Failed to import profiles: {str(e)}")
+        
+        return response 
 
     def export_profiles_callback(self, request: Trigger.Request, response: Trigger.Response):
         response.success = True

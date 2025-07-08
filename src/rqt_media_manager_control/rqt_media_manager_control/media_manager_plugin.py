@@ -65,6 +65,7 @@ class MediaManagerRqtPlugin(Plugin):
         self.profile_import.setToolTip("import profiles")
         self.profile_import.setIconSize(actual_size)
         self.profile_import.setFixedSize(actual_size)
+        self.profile_import.clicked.connect(self.on_import_profiles_clicked)
 
         self.la_timer: QLabel = self._widget.la_timer
         self.la_timer.setVisible(False)
@@ -185,6 +186,17 @@ class MediaManagerRqtPlugin(Plugin):
 
     def on_refresh_clicked(self):
         self._backend.load_media()
+
+
+    def on_import_profiles_clicked(self):
+        file_name, _ = QFileDialog.getOpenFileName(self._widget, "Select Profile File", "", "YAML Files (*.yaml)")
+        if file_name:
+            try:
+                self._backend.import_profile(file_name)
+                QMessageBox.information(self._widget, "Success", "Profile imported successfully.")
+            except Exception as e:
+                QMessageBox.critical(self._widget, "Error", f"Failed to import profile: {str(e)}")
+
 
     def on_export_profiles_clicked(self):
         folder = QFileDialog.getExistingDirectory(self._widget, "Select Folder")
