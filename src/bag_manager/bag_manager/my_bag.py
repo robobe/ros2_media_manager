@@ -2,6 +2,7 @@
 
 import rclpy
 from rclpy.node import Node
+from rclpy.parameter import Parameter
 from rclpy.serialization import serialize_message
 import rosbag2_py
 from sensor_msgs.msg import CompressedImage, Image
@@ -21,7 +22,7 @@ import shutil
 import yaml
 from ament_index_python.packages import get_package_share_directory
 
-
+PROFILE_FILE_NAME="profiles.yaml"
 INTERVAL_CHECK = 1.0
 
 SRV_START_STOP = "start_stop"
@@ -30,9 +31,12 @@ SRV_REMOVE_ALL = "remove_all_media"
 SRV_GET_MEDIA_LIST = "get_media_list"
 SRV_GET_PROFILE_LIST = "get_profile_list"
 SRV_SET_MEDIA_NAME = "set_media_name"
+SRV_EXPORT_PROFILE = "export_profile"
 
 PARAM_MEDIA_LOCATION = "media_location"
 PARAM_PROFILE_LOCATION = "profile_location"
+PARAM_NODE_ADDRESS = "node_address"
+
 
 class _SubscriberHelper(object):
     """
@@ -92,6 +96,7 @@ class Recorder(Node):
         self._init_parameters()
         self._init_service()
         self._load_profile()
+        self._add_profile(None)
         self.topics = []
         
         
@@ -99,10 +104,12 @@ class Recorder(Node):
         self.get_logger().info("start bag manager")
 
 
+    
+
     def _load_profile(self):
         profile_path = Path(self.get_parameter(PARAM_PROFILE_LOCATION).get_parameter_value().string_value)
         if not profile_path.exists():
-            profile_path = Path(get_package_share_directory("bag_manager")).joinpath("config").joinpath("profiles.yaml")
+            profile_path = Path(get_package_share_directory("bag_manager")).joinpath("config").joinpath(PROFILE_FILE_NAME)
             if not profile_path.exists():
                 self.get_logger().error(f"No profile file: {profile_path}")
                 return
@@ -117,6 +124,22 @@ class Recorder(Node):
         self._profiles = Profiles(profiles=profile_list)
         
 
+    def _add_profile(self, profile: Profile):
+        profile = Profile(
+            id="yyy",
+            topics=["aaa", "bbb", "ccc"]
+        )
+        self._profiles.profiles.append(profile)
+
+        yaml_dict = {
+            "profiles": {
+                profile.id: profile.topics for profile in self._profiles.profiles
+            }
+        }
+
+        # Dump to YAML file
+        with open("/workspace/src/bag_manager/config/profiles.yaml", "w") as f:
+            yaml.dump(yaml_dict, f, default_flow_style=False)
 
     def _get_full_topic_name(self, topic):
         topic_name = f'/{self.get_name()}/{topic}'
@@ -125,6 +148,8 @@ class Recorder(Node):
     def _init_parameters(self):
         self.declare_parameter(PARAM_MEDIA_LOCATION, "/tmp/data")
         self.declare_parameter(PARAM_PROFILE_LOCATION, "/tmp/profile.yaml")
+        self.declare_parameter(PARAM_NODE_ADDRESS, "127.0.0.1")
+
 
         
 
@@ -136,6 +161,12 @@ class Recorder(Node):
         remove all
         get media list
         """
+        self.export_profile = self.create_service(
+            Trigger,
+            self._get_full_topic_name(SRV_EXPORT_PROFILE),
+            self.export_profiles_callback
+        )
+
         self.set_media_name = self.create_service(
             SetMediaFile,
             self._get_full_topic_name(SRV_SET_MEDIA_NAME),
@@ -209,6 +240,19 @@ class Recorder(Node):
         self.get_logger().info(msg)
         response.success = True
         response.message = msg
+        return response
+
+    def export_profiles_callback(self, request: Trigger.Request, response: Trigger.Response):
+        response.success = True
+
+        yaml_dict = {
+            "profiles": {
+                profile.id: profile.topics for profile in self._profiles.profiles
+            }
+        }
+
+        data = yaml.dump(yaml_dict, default_flow_style=False)
+        response.message = data
         return response
 
     def set_media_name_callback(self, request: SetMediaFile.Request, response: SetMediaFile.Response):

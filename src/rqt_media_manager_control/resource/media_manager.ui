@@ -198,6 +198,27 @@
     <item>
      <widget class="QComboBox" name="combo_profiles"/>
     </item>
+    <item>
+     <widget class="QPushButton" name="cmd_profile_create_new">
+      <property name="text">
+       <string>new</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QPushButton" name="cmd_profile_export">
+      <property name="text">
+       <string>export</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QPushButton" name="cmd_profile_import">
+      <property name="text">
+       <string>import</string>
+      </property>
+     </widget>
+    </item>
    </layout>
   </widget>
  </widget>

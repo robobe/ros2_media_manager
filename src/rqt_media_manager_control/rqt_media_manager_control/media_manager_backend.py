@@ -5,6 +5,7 @@ from media_manager_interfaces.srv import GetMediaFileList, SetMediaFile
 from rcl_interfaces.srv import GetParameters
 import subprocess
 import pathlib
+import yaml
 
 SRV_START_STOP = "start_stop"
 SRV_REMOVE_MEDIA = "remove_media"
@@ -12,6 +13,8 @@ SRV_REMOVE_ALL = "remove_all_media"
 SRV_GET_MEDIA_LIST = "get_media_list"
 SRV_SET_MEDIA_NAME = "set_media_name"
 SRV_GET_PROFILE_LIST = "get_profile_list"
+SRV_EXPORT_PROFILE = "export_profile"
+
 
 NODE_NAME = "media_manager"
 
@@ -39,8 +42,12 @@ class BackendNode(Node):
         self.__set_media_client = None#
         self.__start_stop_client = None # 
         self.__remove_all_client = None
+        self.__export_profile_client = None
         self.__get_media_location_client = None
         self.__load_profile_client = None
+        self.__selected_profile = None
+        self.remote_address = None
+        self.remote_media_location = None
 
         self.on_profile_fetch = Event()
         self.on_media_list_fetch = Event()
@@ -84,6 +91,15 @@ class BackendNode(Node):
             self.__get_media_location_client.destroy()
         self.__get_media_location_client = self.create_client(GetParameters, self._get_full_topic_name("get_parameters"))
 
+        if self.__export_profile_client is not None:
+            self.__export_profile_client.destroy()
+        self.__export_profile_client = self.create_client(Trigger, self._get_full_topic_name(SRV_EXPORT_PROFILE))
+        
+
+    def set_profile(self, profile_name):
+        self.__selected_profile = profile_name
+
+
     def set_source(self, source):
         #TODO move to enum and do better
         if source == "mp4":
@@ -118,14 +134,35 @@ class BackendNode(Node):
 
             self.load_media()
             self.load_profiles()
-            self.get_media_location_param()
+            self.load_parameters_from_remote()
             self.on_connected.fire()
-        except:
+        except Exception as e:
+            self.get_logger().error(f"Failed to load remote service {e}")
             self.on_error.fire("Failed to load remote service")
 
-    def get_media_location_param(self):
+    def get_all_topics(self):
+        """
+        Get all topics from the media manager node
+        """
+        topics = self.get_topic_names_and_types()
+        topics = [topic for topic, _ in topics]
+        self.get_logger().info(f"Topics: {topics}")
+        return topics
+    
+    def create_profile(self, profile_name, topics):
+        pass
+
+
+    def load_parameters_from_remote(self):
+        data = self.get_param_values([
+            "node_address", 
+            "media_location"])
+        
+        self.remote_address, self.remote_media_location = data
+
+    def get_param_values(self, param_names):
         request = GetParameters.Request()
-        request.names = ["media_location"]
+        request.names = param_names
 
         future = self.__get_media_location_client.call_async(request)
         rclpy.spin_until_future_complete(self, future)
@@ -133,14 +170,11 @@ class BackendNode(Node):
         response: GetParameters.Response
         if future.result():
             response = future.result()
-            
-            if len(response.values) != 1:
-                self.on_error("Failed to load remote media location")
 
-            self.remote_media_location = response.values[0].string_value
-            self.get_logger().info(f"remote location: {self.remote_media_location}")
+            return [param.string_value for param in response.values]
         else:
             self.get_logger().error("Service call failed")
+            #TODO: ????
 
     def load_profiles(self):
         self.req = GetMediaFileList.Request()
@@ -241,11 +275,44 @@ class BackendNode(Node):
             self.get_logger().error(f"Failed start / stop record media")
             self.on_error(response.message)
 
+    def export_profile(self, target_folder):
+        """
+        """
+        response: Trigger.Response
+        req: Trigger.Request = Trigger.Request()
+        future = self.__export_profile_client.call_async(req)
+        rclpy.spin_until_future_complete(self, future, timeout_sec=SERVICE_CALL_TIMEOUT)
+        if not future.done():
+            msg = "Timeout while exporting profile"
+            self.get_logger().error(msg)
+            self.on_error.fire(msg)
+            return
+        if future.result() is not None:
+            response = future.result()
+            if response.success:
+
+
+                yaml_obj = yaml.safe_load(response.message)
+                with open(pathlib.Path(target_folder).joinpath("exported_profile.yaml"), "w") as f:
+                    yaml.dump(yaml_obj, f, default_flow_style=False, sort_keys=False)
+
+                self.get_logger().info(f"Profile exported to {target_folder}")
+        else:
+            self.get_logger().error(f"Failed export profile")
+            self.on_error(response.message)
+
     def download_file(self, source, target_folder):
         remote_path = pathlib.Path(self.remote_media_location).joinpath(source).as_posix()
+        self.run_rsync(remote_path, target_folder
+                       
+                       )
+    def run_rsync(self, source, target_folder):
+        """
+        rsync -avz user@<remote_ip>:/path/to/file ./local/
+        """
         rsync_cmd = [
         "rsync", "-avz", "--progress",
-        remote_path,
+        f"user@127.0.0.1:{source}", #TODO: move to config
         target_folder
         ]
 
