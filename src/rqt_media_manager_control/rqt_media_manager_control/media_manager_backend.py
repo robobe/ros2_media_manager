@@ -103,6 +103,7 @@ class BackendNode(Node):
 
     def set_profile(self, profile_name):
         self.__selected_profile = profile_name
+        self.get_logger().info(f"Selected profile: {self.__selected_profile}")
 
 
     def set_source(self, source):
@@ -233,8 +234,12 @@ class BackendNode(Node):
             self.get_logger().error(f"Failed to remove media: {file_name}")
 
     def set_media(self, file_name):
+        """
+        """
         req: SetStringArray.Request = SetStringArray.Request()
         req.data.append(file_name)
+        req.data.append(self.__selected_profile)
+
         future = self.__set_media_client.call_async(req)
         rclpy.spin_until_future_complete(self, future)
         if future.result() is not None:

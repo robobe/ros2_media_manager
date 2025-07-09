@@ -126,6 +126,9 @@ class Recorder(Node):
         
 
     def _add_profile(self, profile: Profile):
+        """
+        TODO: finish
+        """
         profile = Profile(
             id="yyy",
             topics=["aaa", "bbb", "ccc"]
@@ -192,7 +195,7 @@ class Recorder(Node):
             self.get_all_media_callback
         )
 
-        self.get_all_media_service = self.create_service(
+        self.get_profiles_service = self.create_service(
             GetMediaFileList,
             self._get_full_topic_name(SRV_GET_PROFILE_LIST),
             self.get_all_profiles_callback
@@ -300,8 +303,13 @@ class Recorder(Node):
         """
         TODO: create logic method
         """
+        if len(request.data) != 2:
+            response.success = False
+            response.message = "Invalid data length. Expected 2 items. file name and profile name"
+            return response
         media_path = Path(self.get_parameter(PARAM_MEDIA_LOCATION).get_parameter_value().string_value)
         filename = request.data[0]
+        profile = request.data[1] 
 
         self._current_file_path = media_path / filename
         if self._current_file_path.exists():
@@ -311,7 +319,7 @@ class Recorder(Node):
         
         
         try:
-            self.create_bag_file()
+            self.create_bag_file(profile)
             
             response.message = ""
             response.success = True

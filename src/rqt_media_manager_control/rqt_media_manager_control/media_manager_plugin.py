@@ -142,7 +142,7 @@ class MediaManagerRqtPlugin(Plugin):
         """
         Load the selected profile and update the media list
         """
-        print(profile_name)
+        self._backend.set_profile(profile_name)
 
 
     def on_profile_add(self):
