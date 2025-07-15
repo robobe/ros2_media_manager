@@ -48,7 +48,6 @@ class BackendNode(Node):
         self.__get_media_location_client = None
         self.__load_profile_client = None
         self.__selected_profile = None
-        self.remote_address = None
         self.remote_media_location = None
 
         self.on_profile_fetch = Event()
@@ -139,8 +138,11 @@ class BackendNode(Node):
 
 
             self.load_media()
+            self.get_logger().info("media loaded")
             self.load_profiles()
+            self.get_logger().info("profiles loaded")
             self.load_parameters_from_remote()
+            self.get_logger().info("parameters loaded")
             self.on_connected.fire()
         except Exception as e:
             self.get_logger().error(f"Failed to load remote service {e}")
@@ -161,10 +163,9 @@ class BackendNode(Node):
 
     def load_parameters_from_remote(self):
         data = self.get_param_values([
-            "node_address", 
-            "media_location"])
+                    "media_location"])
         
-        self.remote_address, self.remote_media_location = data
+        self.remote_media_location = data
 
     def get_param_values(self, param_names):
         request = GetParameters.Request()
@@ -176,7 +177,7 @@ class BackendNode(Node):
         response: GetParameters.Response
         if future.result():
             response = future.result()
-
+            self.get_logger().info(f"Parameters: {response.values}")
             return [param.string_value for param in response.values]
         else:
             self.get_logger().error("Service call failed")
