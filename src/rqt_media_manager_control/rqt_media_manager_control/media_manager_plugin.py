@@ -4,7 +4,7 @@ from ament_index_python.packages import get_package_share_directory
 from rqt_gui_py.plugin import Plugin
 from .media_manager_ui_loader import MediaManagerWidget
 from .media_manager_backend import BackendNode
-from PyQt5.QtCore import QStringListModel, Qt, QTimer
+from PyQt5.QtCore import QStringListModel, Qt, QTimer, QSize
 # from python_qt_binding.QtWidgets import QApplication, QWidget, QVBoxLayout, QListView, QPushButton
 from PyQt5.QtWidgets import (
     QPushButton, 
@@ -15,11 +15,13 @@ from PyQt5.QtWidgets import (
     QFileDialog,
     QRadioButton,
     QComboBox,
-    QLabel
+    QLabel,
+    QDialog
     )
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtGui import QPixmap, QIcon
 from pathlib import Path
 from functools import partial
+from .profile_creator_dialog import MyDialog
 
 PKG = "rqt_media_manager_control"
 
@@ -30,10 +32,40 @@ class MediaManagerRqtPlugin(Plugin):
         self._backend = BackendNode()
         self.elapsed_seconds = 0
         
+        
+
         # Timer setup
         self.timer = QTimer(self._widget)
         self.timer.timeout.connect(self.update_timer)
         self.timer.setInterval(1000)  # 1 second
+
+        icon_size = QSize(24, 24)
+        icon = QIcon.fromTheme("document-open")
+        actual_size = icon.actualSize(icon_size)
+
+        self.profile_create_new = self._widget.cmd_profile_create_new
+        self.profile_create_new.setIcon(QIcon.fromTheme("document-new"))  # You can replace with QIcon("path/to/new.png")
+        self.profile_create_new.setText("")
+        self.profile_create_new.setToolTip("Create New")
+        self.profile_create_new.setIconSize(actual_size)
+        self.profile_create_new.setFixedSize(actual_size)
+        self.profile_create_new.clicked.connect(self.on_profile_add)
+
+        self.profile_export = self._widget.cmd_profile_export
+        self.profile_export.setIcon(QIcon.fromTheme("document-save-as"))  # You can replace with QIcon("path/to/new.png")
+        self.profile_export.setText("")
+        self.profile_export.setToolTip("export profiles")
+        self.profile_export.setIconSize(actual_size)
+        self.profile_export.setFixedSize(actual_size)
+        self.profile_export.clicked.connect(self.on_export_profiles_clicked)
+
+        self.profile_import = self._widget.cmd_profile_import
+        self.profile_import.setIcon(QIcon.fromTheme("document-open"))  # You can replace with QIcon("path/to/new.png")
+        self.profile_import.setText("")
+        self.profile_import.setToolTip("import profiles")
+        self.profile_import.setIconSize(actual_size)
+        self.profile_import.setFixedSize(actual_size)
+        self.profile_import.clicked.connect(self.on_import_profiles_clicked)
 
         self.la_timer: QLabel = self._widget.la_timer
         self.la_timer.setVisible(False)
@@ -47,6 +79,7 @@ class MediaManagerRqtPlugin(Plugin):
         self.m_profiles = QStringListModel()
         self.m_profiles.setStringList([])
         self.combo_profiles.setModel(self.m_profiles)
+        self.combo_profiles.currentTextChanged.connect(self.on_profile_changed)
 
         self.radio_mp4: QRadioButton = self._widget.ra_mp4
         self.radio_mp4.toggled.connect(partial(self.on_radio_toggled, "mp4"))
@@ -105,6 +138,25 @@ class MediaManagerRqtPlugin(Plugin):
         context.add_widget(self._widget)
         self._backend.set_source("bag")
 
+    def on_profile_changed(self, profile_name):
+        """
+        Load the selected profile and update the media list
+        """
+        self._backend.set_profile(profile_name)
+
+
+    def on_profile_add(self):
+        """
+        Create a new profile
+        """
+        dialog = MyDialog(items=self._backend.get_all_topics(), parent=self._widget)
+        if dialog.exec_() == QDialog.Accepted:
+            selected_items = dialog.get_checked_items()
+            comment = dialog.get_comment()
+            if not selected_items:
+                QMessageBox.warning(self._widget, "Warning", "No topics selected for the profile.")
+                return
+            self._backend.create_profile(comment, selected_items)
 
     def on_radio_toggled(self, mode):
         self._backend.set_source(mode)
@@ -134,6 +186,22 @@ class MediaManagerRqtPlugin(Plugin):
 
     def on_refresh_clicked(self):
         self._backend.load_media()
+
+
+    def on_import_profiles_clicked(self):
+        file_name, _ = QFileDialog.getOpenFileName(self._widget, "Select Profile File", "", "YAML Files (*.yaml)")
+        if file_name:
+            try:
+                self._backend.import_profile(file_name)
+                QMessageBox.information(self._widget, "Success", "Profile imported successfully.")
+            except Exception as e:
+                QMessageBox.critical(self._widget, "Error", f"Failed to import profile: {str(e)}")
+
+
+    def on_export_profiles_clicked(self):
+        folder = QFileDialog.getExistingDirectory(self._widget, "Select Folder")
+        if folder:
+            self._backend.export_profile(folder)
 
     def on_download_clicked(self):
         indexes = self.lvMedia.selectedIndexes()

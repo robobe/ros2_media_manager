@@ -12,9 +12,10 @@ find_package(rosidl_default_generators REQUIRED)
 set(msg_files
 
 )
+
 set(srv_files
   "srv/GetMediaFileList.srv"
-  "srv/SetMediaFile.srv"
+  "srv/SetStringArray.srv"
   )
 
 

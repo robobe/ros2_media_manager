@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>632</width>
-    <height>627</height>
+    <width>630</width>
+    <height>650</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -197,6 +197,27 @@
     </item>
     <item>
      <widget class="QComboBox" name="combo_profiles"/>
+    </item>
+    <item>
+     <widget class="QPushButton" name="cmd_profile_create_new">
+      <property name="text">
+       <string>new</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QPushButton" name="cmd_profile_export">
+      <property name="text">
+       <string>export</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QPushButton" name="cmd_profile_import">
+      <property name="text">
+       <string>import</string>
+      </property>
+     </widget>
     </item>
    </layout>
   </widget>
