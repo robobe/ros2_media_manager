@@ -2,7 +2,7 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>media_manager</name>
-  <version>0.0.1</version>
+  <version>0.0.2</version>
   <description>Save image topic as mp4</description>
   <maintainer email="dev@gmail.com">user</maintainer>
   <license>Apache-2.0</license>
