@@ -47,6 +47,13 @@
       "problemMatcher": [],
       "detail": "Add local rosdep path",
       "dependsOn": "Path rosdep"
+    },
+    {
+      "label": "github releases",
+      "type": "shell",
+      "command": "gh release upload v0.0.2 ./debs/*0.0.2*.deb --clobber",
+      "problemMatcher": [],
+      "detail": "upload debian package to github releases",
     }
   ],
   "inputs": [
