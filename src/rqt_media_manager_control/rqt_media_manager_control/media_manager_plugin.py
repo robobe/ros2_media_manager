@@ -16,7 +16,9 @@ from PyQt5.QtWidgets import (
     QRadioButton,
     QComboBox,
     QLabel,
-    QDialog
+    QDialog,
+    QVBoxLayout,
+    QHBoxLayout
     )
 from PyQt5.QtGui import QPixmap, QIcon
 from pathlib import Path
@@ -25,6 +27,59 @@ from .profile_creator_dialog import MyDialog
 
 PKG = "rqt_media_manager_control"
 
+class LoginDialog(QDialog):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Login")
+        self.setModal(True)
+
+        layout = QVBoxLayout()
+
+        # Address
+        self.address_input = QLineEdit()
+        self.address_input.setText("127.0.0.1")
+        layout.addWidget(QLabel("Address:"))
+        layout.addWidget(self.address_input)
+
+        # Port
+        self.port_input = QLineEdit()
+        self.port_input.setText("22")
+        layout.addWidget(QLabel("Port:"))
+        layout.addWidget(self.port_input)
+
+        # Username
+        self.username_input = QLineEdit()
+        self.username_input.setText("user")
+        layout.addWidget(QLabel("Username:"))
+        layout.addWidget(self.username_input)
+
+        # Password
+        self.password_input = QLineEdit()
+        self.password_input.setText("user")
+        self.password_input.setEchoMode(QLineEdit.Password)
+        layout.addWidget(QLabel("Password:"))
+        layout.addWidget(self.password_input)
+
+        # Buttons
+        button_layout = QHBoxLayout()
+        ok_btn = QPushButton("OK")
+        cancel_btn = QPushButton("Cancel")
+        ok_btn.clicked.connect(self.accept)
+        cancel_btn.clicked.connect(self.reject)
+        button_layout.addWidget(ok_btn)
+        button_layout.addWidget(cancel_btn)
+
+        layout.addLayout(button_layout)
+        self.setLayout(layout)
+
+    def get_credentials(self):
+        return (
+            self.address_input.text(),
+            self.username_input.text(),
+            self.password_input.text(),
+            self.port_input.text()
+        )
+    
 class MediaManagerRqtPlugin(Plugin):
     def __init__(self, context):
         super().__init__(context)
@@ -205,6 +260,14 @@ class MediaManagerRqtPlugin(Plugin):
 
     def on_download_clicked(self):
         indexes = self.lvMedia.selectedIndexes()
+        if not self._backend.has_credentials():
+            login_dialog = LoginDialog()
+            if login_dialog.exec_() == QDialog.Accepted:
+                address, username, password, port = login_dialog.get_credentials()
+                self._backend.set_credentials(username, password, address, port)
+            else:
+                return
+            
         file_name = self.m_media.data(indexes[0], Qt.DisplayRole)
         folder = QFileDialog.getExistingDirectory(self._widget, "Select Folder")
         if folder:

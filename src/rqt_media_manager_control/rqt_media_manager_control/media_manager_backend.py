@@ -1,3 +1,4 @@
+import os
 import rclpy
 from rclpy.node import Node
 from std_srvs.srv import Trigger
@@ -6,6 +7,8 @@ from rcl_interfaces.srv import GetParameters
 import subprocess
 import pathlib
 import yaml
+import paramiko
+
 
 SRV_START_STOP = "start_stop"
 SRV_REMOVE_MEDIA = "remove_media"
@@ -49,7 +52,10 @@ class BackendNode(Node):
         self.__load_profile_client = None
         self.__selected_profile = None
         self.remote_media_location = None
-
+        self.__remote_user = None
+        self.__remote_password = None
+        self.__remote_host = None
+        self.__remote_port = None
         self.on_profile_fetch = Event()
         self.on_media_list_fetch = Event()
         self.on_error = Event()
@@ -58,6 +64,22 @@ class BackendNode(Node):
         self.on_stop_record = Event()
         self.on_download_done = Event()
         self.on_connected = Event()
+
+    def has_credentials(self):
+        """
+        Check if remote credentials are set
+        """
+        return self.__remote_user is not None and self.__remote_password is not None and self.__remote_host is not None
+    
+    def set_credentials(self, user, password, host, port):
+        """
+        Set remote credentials for downloading files
+        """
+        self.__remote_user = user
+        self.__remote_password = password
+        self.__remote_host = host
+        self.__remote_port = int(port)
+        self.get_logger().info(f"Remote credentials set: {self.__remote_user}@{self.__remote_host}")
 
     def _get_full_topic_name(self, topic):
         topic_name = f'/{self.__source}/{topic}'
@@ -165,7 +187,7 @@ class BackendNode(Node):
         data = self.get_param_values([
                     "media_location"])
         
-        self.remote_media_location = data
+        self.remote_media_location = data[0]
 
     def get_param_values(self, param_names):
         request = GetParameters.Request()
@@ -345,10 +367,49 @@ class BackendNode(Node):
             self.on_error(response.message)
 
     def download_file(self, source, target_folder):
+        
         remote_path = pathlib.Path(self.remote_media_location).joinpath(source).as_posix()
-        self.run_rsync(remote_path, target_folder
-                       
-                       )
+        # self.run_rsync(remote_path, target_folder)
+        self.run_paramiko(remote_path, target_folder)
+
+    def run_paramiko(self, source, target_folder):
+        """
+        Use paramiko to download file from remote server
+        """
+        try:
+            folder_name = os.path.basename(source)
+            os.mkdir(folder_name)
+        except Exception as e:
+            msg = f"Failed to create folder {folder_name}: {e}"
+            self.get_logger().error(msg)
+            self.on_error.fire(msg)
+            return
+        
+        transport = paramiko.Transport((self.__remote_host, self.__remote_port))
+        
+        try:
+            transport.connect(username=self.__remote_user, password=self.__remote_password)
+            sftp = paramiko.SFTPClient.from_transport(transport)
+
+            inbound_files = sftp.listdir(source)
+            
+            target_folder = os.path.join(target_folder, folder_name)
+            for file in inbound_files:
+                filepath = os.path.join(source, file)
+                localpath = os.path.join(target_folder, file)
+                sftp.get(filepath, localpath)
+            self.on_download_done.fire(source)
+            self.get_logger().info(f"Downloaded {source} to {target_folder}")
+        except Exception as e:
+            msg = f"Failed to download {source} with paramiko: {e}"
+            self.get_logger().error(msg)
+            self.on_error.fire(msg)
+        finally:
+            if sftp:
+                sftp.close()
+            if transport:
+                transport.close()
+
     def run_rsync(self, source, target_folder):
         """
         rsync -avz user@<remote_ip>:/path/to/file ./local/

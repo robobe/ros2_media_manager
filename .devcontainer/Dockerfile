@@ -40,4 +40,5 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gh \
+    python3-paramiko \
   && rm -rf /var/lib/apt/lists/*
