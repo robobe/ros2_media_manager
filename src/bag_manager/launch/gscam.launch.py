@@ -12,6 +12,8 @@ def generate_launch_description():
             parameters=[{
                 'gscam_config': 'videotestsrc pattern=ball ! video/x-raw,width=640,height=480,framrate=10/1 ! videoconvert',
                 'use_gst_timestamps': True,
+                'use_sensor_data_qos': True,
+                'camera_info_url': 'file:///workspace/src/bag_manager/config/camera.ini'
             }]
         )
     ])

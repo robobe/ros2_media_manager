@@ -51,7 +51,7 @@
     {
       "label": "github releases",
       "type": "shell",
-      "command": "gh release upload v0.0.2 ./debs/*0.0.2*.deb --clobber",
+      "command": "gh release upload v0.0.3 ./debs/*0.0.3*.deb --clobber",
       "problemMatcher": [],
       "detail": "upload debian package to github releases",
     }

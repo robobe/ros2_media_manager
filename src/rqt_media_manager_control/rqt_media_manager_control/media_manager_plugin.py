@@ -3,7 +3,7 @@
 from ament_index_python.packages import get_package_share_directory
 from rqt_gui_py.plugin import Plugin
 from .media_manager_ui_loader import MediaManagerWidget
-from .media_manager_backend import BackendNode
+from .media_manager_backend import BackendNode, START_RECORD, STOP_RECORD
 from PyQt5.QtCore import QStringListModel, Qt, QTimer, QSize
 # from python_qt_binding.QtWidgets import QApplication, QWidget, QVBoxLayout, QListView, QPushButton
 from PyQt5.QtWidgets import (
@@ -24,6 +24,7 @@ from PyQt5.QtGui import QPixmap, QIcon
 from pathlib import Path
 from functools import partial
 from .profile_creator_dialog import MyDialog
+from functools import partial
 
 PKG = "rqt_media_manager_control"
 
@@ -62,8 +63,8 @@ class LoginDialog(QDialog):
 
         # Buttons
         button_layout = QHBoxLayout()
-        ok_btn = QPushButton("OK")
-        cancel_btn = QPushButton("Cancel")
+        ok_btn: QPushButton = QPushButton("OK")
+        cancel_btn: QPushButton = QPushButton("Cancel")
         ok_btn.clicked.connect(self.accept)
         cancel_btn.clicked.connect(self.reject)
         button_layout.addWidget(ok_btn)
@@ -155,14 +156,14 @@ class MediaManagerRqtPlugin(Plugin):
         self.cmd_set_media:QPushButton  = self._widget.cmdSetMedia
         self.cmd_set_media.setEnabled(False)
         self.cmd_set_media.clicked.connect(self.on_set_media_clicked)
-
+        
         self.cmd_start_record:QPushButton  = self._widget.cmdStartRecord
         self.cmd_start_record.setEnabled(False)
-        self.cmd_start_record.clicked.connect(self.on_start_stop_record_clicked)
+        self.cmd_start_record.clicked.connect(partial(self.on_start_stop_record_clicked, START_RECORD))
 
         self.cmd_stop_record: QPushButton = self._widget.cmdStopRecord
         self.cmd_stop_record.setEnabled(False)
-        self.cmd_stop_record.clicked.connect(self.on_start_stop_record_clicked)
+        self.cmd_stop_record.clicked.connect(partial(self.on_start_stop_record_clicked, STOP_RECORD))
 
         self.cmd_refresh: QPushButton = self._widget.cmdRefresh
         self.cmd_refresh.clicked.connect(self.on_refresh_clicked)
@@ -236,8 +237,8 @@ class MediaManagerRqtPlugin(Plugin):
     def on_set_media_clicked(self):
         self._backend.set_media(str(self.txt_media_name.text()))
 
-    def on_start_stop_record_clicked(self):
-        self._backend.start_stop_media_record()
+    def on_start_stop_record_clicked(self, action):
+        self._backend.start_stop_media_record(action)
 
     def on_refresh_clicked(self):
         self._backend.load_media()

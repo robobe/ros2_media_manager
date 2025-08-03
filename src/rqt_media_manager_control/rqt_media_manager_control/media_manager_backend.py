@@ -1,7 +1,7 @@
 import os
 import rclpy
 from rclpy.node import Node
-from std_srvs.srv import Trigger
+from std_srvs.srv import Trigger, SetBool
 from media_manager_interfaces.srv import GetMediaFileList, SetStringArray
 from rcl_interfaces.srv import GetParameters
 import subprocess
@@ -19,6 +19,8 @@ SRV_GET_PROFILE_LIST = "get_profile_list"
 SRV_EXPORT_PROFILE = "export_profile"
 SRV_IMPORT_PROFILE = "import_profile"
 
+START_RECORD = "start"
+STOP_RECORD = "stop"
 
 NODE_NAME = "media_manager"
 
@@ -104,7 +106,7 @@ class BackendNode(Node):
 
         if self.__start_stop_client is not None:
             self.__start_stop_client.destroy()
-        self.__start_stop_client = self.create_client(Trigger, self._get_full_topic_name(SRV_START_STOP))
+        self.__start_stop_client = self.create_client(SetBool, self._get_full_topic_name(SRV_START_STOP))
 
         if self.__remove_all_client is not None:
             self.__remove_all_client.destroy()
@@ -275,17 +277,23 @@ class BackendNode(Node):
         else:
             self.get_logger().error(f"Failed to remove media: {file_name}")
 
-    def start_stop_media_record(self):
-        req: Trigger.Request = Trigger.Request()
+    def start_stop_media_record(self, action):
+        req: SetBool.Request = SetBool.Request()
+        req.data = action == START_RECORD
         future = self.__start_stop_client.call_async(req)
         rclpy.spin_until_future_complete(self, future)
         if future.result() is not None:
-            response: Trigger.Response = future.result()
+            response: SetBool.Response = future.result()
+            server_message = response.message
             if response.success:
-                if response.message == "START":
+                if server_message == "START":
                     self.on_start_record.fire()
                 else:
+                    if server_message != "STOP":
+                        self.on_error.fire(server_message)
                     self.on_stop_record.fire()
+            else:
+                self.on_error.fire(server_message)
         else:
             self.get_logger().error(f"Failed start / stop record media")
 

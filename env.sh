@@ -7,3 +7,5 @@ export CYCLONEDDS_URI=file://$PWD/cyclonedds.xml
 source /opt/ros/humble/setup.bash
 source install/setup.bash
 source aliases.sh
+
+bind '"\C-b": "ros2 launch bag_manager "'

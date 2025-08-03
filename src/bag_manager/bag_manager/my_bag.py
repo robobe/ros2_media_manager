@@ -15,7 +15,7 @@ import time
 from rclpy.clock import Clock, ClockType
 from qos import gen_subscriber_qos_profile, get_qos_profiles_for_topic, qos_profiles_to_yaml
 from rosidl_runtime_py.utilities import get_message
-from std_srvs.srv import Trigger
+from std_srvs.srv import Trigger, SetBool
 from media_manager_interfaces.srv import GetMediaFileList, SetStringArray
 from pathlib import Path
 import shutil
@@ -202,7 +202,7 @@ class Recorder(Node):
         )
 
         self.start_record_service = self.create_service(
-            Trigger,
+            SetBool,
             self._get_full_topic_name(SRV_START_STOP),
             self.start_stop_callback
         )
@@ -231,25 +231,37 @@ class Recorder(Node):
             response.success = False
             response.message = f"File {name} does not exist"
         return response
-    
-    def start_stop_callback(self, request: Trigger.Request, response: Trigger.Response):
+
+    def start_stop_callback(self, request: SetBool.Request, response: SetBool.Response):
         # Implement your start record logic here
         msg = "error start / stop video record"
-        if self._stop_flag:
+        run_ok = False
+        start_request = request.data
+        if start_request and self._stop_flag:
             self._stop_flag = False
             self._run_master_check()
             self._topics_validation()
             self._write_thread = threading.Thread(target=self._run_write, daemon=True, name="storage_worker")
             self._write_thread.start()
             msg = "START"
-            
-        else:
-            # stop record
+            run_ok = True
+        
+        elif start_request and not self._stop_flag:
+            msg = "There already record in progress, i auto stop the recording, please send start again"
             self._stop_flag = True
+
+
+        stop_request = not request.data
+        if stop_request:
+            # stop record
             msg = "STOP"
+            if self._stop_flag:
+                msg = "Possible bag error, There is no active record"
+            self._stop_flag = True
+            run_ok = True
 
         self.get_logger().info(msg)
-        response.success = True
+        response.success = run_ok
         response.message = msg
         return response
 

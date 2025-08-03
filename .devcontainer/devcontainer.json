@@ -2,7 +2,7 @@
     "name": "media_manager",
     "dockerComposeFile": [
       "../docker-compose.yaml",
-      "../docker-compose.jetson.yaml"
+      // "../docker-compose.jetson.yaml"
     ],
     "service": "ros",
     "shutdownAction": "stopCompose",
